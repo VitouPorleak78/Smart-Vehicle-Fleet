@@ -20,7 +20,7 @@ class VehicleRepository {
             INSERT INTO telemetry_logs (driver_id, vehicle_id, propulsion_type, odometer, fuelConsumption, evConsumption, log_date)
             VALUES (?, ?, ?, ?, ?, ?, CURDATE())
         `;
-        const values = [driverID, vehicleID, propulsionType, odometer, fuelConsumption, evConsumption, logDate];
+        const values = [driverID, vehicleID, propulsionType, odometer, fuelConsumption, evConsumption];
 
         const [result] = await db.query(query, values);
         return result;
