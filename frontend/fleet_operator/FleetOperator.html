@@ -116,17 +116,17 @@
 
       <!-- KPI Summary Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <button id="card-active-fleet" data-dashboard-card="active-fleet" type="button" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between text-left cursor-pointer hover:shadow-lg transition">
           <div>
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Fleet</p>
-            <p class="text-2xl font-extrabold text-slate-900 mt-1">182 <span class="text-xs text-slate-400 font-medium">/ 250</span></p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1">8 <span class="text-xs text-slate-400 font-medium">/ 250</span></p>
           </div>
           <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
             <i class="fa-solid fa-truck"></i>
           </div>
-        </div>
+        </button>
 
-        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <button id="card-total-mileage" data-dashboard-card="total-mileage" type="button" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between text-left cursor-pointer hover:shadow-lg transition">
           <div>
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mileage (Mo)</p>
             <p class="text-2xl font-extrabold text-slate-900 mt-1">124,500 <span class="text-xs text-slate-400 font-medium">km</span></p>
@@ -134,9 +134,9 @@
           <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
             <i class="fa-solid fa-route"></i>
           </div>
-        </div>
+        </button>
 
-        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <button id="card-maintenance-due" data-dashboard-card="maintenance-due" type="button" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between text-left cursor-pointer hover:shadow-lg transition">
           <div>
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Maintenance Due</p>
             <p class="text-2xl font-extrabold text-slate-900 mt-1">14 <span class="text-xs text-amber-500 font-medium">Vehicles</span></p>
@@ -144,9 +144,9 @@
           <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
             <i class="fa-solid fa-wrench"></i>
           </div>
-        </div>
+        </button>
 
-        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+        <button id="card-critical-alerts" data-dashboard-card="critical-alerts" type="button" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between text-left cursor-pointer hover:shadow-lg transition">
           <div>
             <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Critical Alerts</p>
             <p class="text-2xl font-extrabold text-slate-900 mt-1">3 <span class="text-xs text-rose-500 font-medium">Unresolved</span></p>
@@ -154,7 +154,7 @@
           <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
             <i class="fa-solid fa-triangle-exclamation"></i>
           </div>
-        </div>
+        </button>
       </div>
 
       <!-- Dashboard Grid -->
@@ -164,12 +164,31 @@
             <h3 class="font-bold text-slate-900 text-base">Upcoming Services</h3>
             <span class="text-xs text-blue-600 bg-blue-50 font-bold px-2.5 py-1 rounded-full">Next Maintenance</span>
           </div>
-          <div class="h-64 bg-slate-100 rounded-xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-200">
-            <div class="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-60"></div>
-            <div class="relative text-center space-y-3">
-              <i class="fa-solid fa-calendar-days text-5xl text-blue-500"></i>
-              <p class="text-sm font-bold text-slate-800">Upcoming service schedule and maintenance reminders.</p>
-              <p class="text-xs font-medium text-slate-500">See the latest maintenance tasks and due dates for your fleet.</p>
+          <div class="bg-slate-100 rounded-2xl border border-slate-200 p-5 space-y-4">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h4 class="text-base font-bold text-slate-900">Upcoming Services</h4>
+                <p class="text-xs text-slate-500 mt-1">Planned maintenance and service windows for your highest-priority vehicles.</p>
+              </div>
+              <span class="text-xs text-blue-600 bg-blue-50 font-bold px-3 py-1 rounded-full">4 planned</span>
+            </div>
+            <div class="grid gap-3">
+              <div class="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm">
+                <p class="font-bold text-slate-900">FLT-8829</p>
+                <p class="text-xs text-slate-500 mt-1">Oil change • Jul 14, 2026 • 08:30 AM</p>
+              </div>
+              <div class="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm">
+                <p class="font-bold text-slate-900">FLT-4130</p>
+                <p class="text-xs text-slate-500 mt-1">Tire rotation • Jul 16, 2026 • 10:00 AM</p>
+              </div>
+              <div class="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm">
+                <p class="font-bold text-slate-900">FLT-2092</p>
+                <p class="text-xs text-slate-500 mt-1">Brake inspection • Jul 18, 2026 • 02:00 PM</p>
+              </div>
+              <div class="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm">
+                <p class="font-bold text-slate-900">FLT-7214</p>
+                <p class="text-xs text-slate-500 mt-1">Transmission check • Jul 20, 2026 • 11:00 AM</p>
+              </div>
             </div>
           </div>
         </div>
@@ -201,31 +220,109 @@
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- GPS tracking view removed -->          </div>
-        </div>
+      <div id="dashboard-detail-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4">
+        <div class="relative w-full max-w-5xl">
+          <button id="dashboard-detail-close" type="button" class="absolute top-3 -right-4 z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg hover:bg-rose-600 transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
 
-        <!-- Simulated Map Screen -->
-        <div class="lg:col-span-3 bg-slate-900 rounded-2xl p-6 min-h-[450px] relative flex flex-col justify-between overflow-hidden shadow-md">
-          <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
-          <div class="relative z-10 flex justify-between items-center">
-            <span class="bg-slate-800/80 text-xs font-mono text-emerald-400 px-3 py-1.5 rounded-lg border border-slate-700">LAT: 37.7749° N, LONG: 122.4194° W</span>
-            <span class="bg-blue-600 text-white font-bold text-xs px-3 py-1 rounded-full">GPS SIGNAL: 100%</span>
-          </div>
+          <div id="dashboard-detail-panel" class="overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl">
+            <div id="dashboard-detail-empty" class="p-6 text-sm text-slate-500">
+              Click any summary card above to see the fleet details for that category.
+            </div>
 
-          <div class="relative z-10 text-center my-auto space-y-3">
-            <i class="fa-solid fa-crosshairs text-5xl text-blue-500 animate-pulse"></i>
-            <h4 class="text-white font-bold text-lg">Interactive GPS Map Component</h4>
-            <p class="text-slate-400 text-xs max-w-md mx-auto">Tracking unit FLT-8829 on main corridor route. Estimated arrival in 1 hr 14 mins.</p>
-          </div>
+            <div id="dashboard-detail-active-fleet" data-dashboard-detail class="hidden overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Active Fleet Vehicles</h3>
+                  <p class="text-xs text-slate-500 mt-1">Showing 8 active vehicles in operation.</p>
+                </div>
+                <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">8 vehicles</span>
+              </div>
+              <div class="overflow-x-auto custom-scrollbar max-h-[60vh]">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-400 uppercase tracking-wide text-[10px]">
+                    <tr>
+                      <th class="py-3 px-4">VEHICLE ID</th>
+                      <th class="py-3 px-4">MODEL</th>
+                      <th class="py-3 px-4">DRIVER</th>
+                      <th class="py-3 px-4">STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody id="active-fleet-list" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
 
-          <div class="relative z-10 bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex justify-between items-center text-xs text-slate-300">
-            <span>Destination: <strong>Seattle Logistics Center</strong></span>
-            <span>ETA: <strong>14:45 PM</strong></span>
+            <div id="dashboard-detail-total-mileage" data-dashboard-detail class="hidden overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Mileage by Vehicle</h3>
+                  <p class="text-xs text-slate-500 mt-1">These vehicle mileages add up to the dashboard total of 124,500 km.</p>
+                </div>
+                <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">8 vehicles</span>
+              </div>
+              <div class="overflow-x-auto custom-scrollbar max-h-[60vh]">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-400 uppercase tracking-wide text-[10px]">
+                    <tr>
+                      <th class="py-3 px-4">VEHICLE ID</th>
+                      <th class="py-3 px-4">MILEAGE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="total-mileage-list" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="dashboard-detail-maintenance-due" data-dashboard-detail class="hidden overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Maintenance Due</h3>
+                  <p class="text-xs text-slate-500 mt-1">14 vehicles with upcoming maintenance tasks ordered by date.</p>
+                </div>
+                <span class="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full">14 items</span>
+              </div>
+              <div class="overflow-x-auto custom-scrollbar max-h-[60vh]">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-400 uppercase tracking-wide text-[10px]">
+                    <tr>
+                      <th class="py-3 px-4">VEHICLE ID</th>
+                      <th class="py-3 px-4">TASK</th>
+                      <th class="py-3 px-4">DATE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="maintenance-due-list" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div id="dashboard-detail-critical-alerts" data-dashboard-detail class="hidden overflow-hidden">
+              <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">Critical Vehicle Alerts</h3>
+                  <p class="text-xs text-slate-500 mt-1">3 critical alerts requiring immediate attention, ordered by date.</p>
+                </div>
+                <span class="text-xs text-rose-600 bg-rose-50 px-3 py-1 rounded-full">3 alerts</span>
+              </div>
+              <div class="overflow-x-auto custom-scrollbar max-h-[60vh]">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-400 uppercase tracking-wide text-[10px]">
+                    <tr>
+                      <th class="py-3 px-4">VEHICLE ID</th>
+                      <th class="py-3 px-4">ISSUE</th>
+                      <th class="py-3 px-4">DATE</th>
+                    </tr>
+                  </thead>
+                  <tbody id="critical-alerts-list" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- ========================================================= -->
