@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Fleet Management System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col lg:flex-row relative overflow-x-hidden">
+
+  <!-- MOBILE HEADER -->
+  <div class="lg:hidden bg-sidebar text-white p-4 flex items-center justify-between sticky top-0 z-50 shadow-md">
+    <div class="flex items-center gap-3">
+      <button id="mobile-menu-btn" class="text-xl text-slate-300 hover:text-white p-1">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div>
+        <h1 class="text-base font-bold leading-tight">Smart Fleet</h1>
+        <p class="text-[10px] text-slate-400 font-medium">Management System</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR NAVIGATION -->
+  <aside id="sidebar" class="bg-sidebar text-white w-full lg:w-64 flex-shrink-0 flex flex-col justify-between p-6 fixed lg:static inset-y-0 left-0 z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+    <div>
+      <!-- Brand Header -->
+      <div class="hidden lg:block mb-10">
+        <h1 class="text-xl font-bold tracking-wide">Smart Fleet</h1>
+        <p class="text-xs text-slate-400 font-medium">Management System</p>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="space-y-2 mt-12 lg:mt-0">
+        <button id="nav-dashboard" onclick="switchTab('dashboard')" class="nav-btn active w-full flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition">
+          <i class="fa-solid fa-border-all text-lg w-5 text-center"></i>
+          <span>Dashboard</span>
+        </button>
+        <button id="nav-expense" onclick="switchTab('expense')" class="nav-btn w-full flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition">
+          <i class="fa-solid fa-file-invoice-dollar text-lg w-5 text-center"></i>
+          <span>Expense Approval</span>
+        </button>
+        <button id="nav-analytics" onclick="switchTab('analytics')" class="nav-btn w-full flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition">
+          <i class="fa-solid fa-chart-line text-lg w-5 text-center"></i>
+          <span>Driver Analytics</span>
+        </button>
+        <button id="nav-settings" onclick="switchTab('settings')" class="nav-btn w-full flex items-center gap-3 text-slate-400 hover:text-white px-4 py-3 rounded-xl font-medium transition">
+          <i class="fa-solid fa-gear text-lg w-5 text-center"></i>
+          <span>Settings</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Logout -->
+    <div class="pt-6 border-t border-slate-800 mt-6">
+      <a href="#" class="flex items-center gap-3 text-slate-400 hover:text-white font-medium transition">
+        <i class="fa-solid fa-arrow-right-from-bracket text-lg w-5 text-center"></i>
+        <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- OVERLAY FOR MOBILE SIDEBAR -->
+  <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 hidden lg:hidden"></div>
+
+  <!-- MAIN WORKSPACE CONTAINER -->
+  <main class="flex-1 flex flex-col min-w-0 max-w-[1920px] mx-auto w-full h-full">
+    
+    <!-- TOP NAVBAR -->
+    <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center justify-between w-full sm:w-auto">
+        <h2 id="page-header-title" class="text-lg sm:text-xl font-bold text-slate-900">Fleet Command</h2>
+      </div>
+      
+      <!-- User Profile -->
+      <div class="hidden sm:flex items-center gap-5 w-auto justify-end">
+        <button class="text-slate-500 hover:text-slate-800 relative">
+          <i class="fa-regular fa-bell text-lg"></i>
+          <span class="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+        </button>
+        <button class="text-slate-500 hover:text-slate-800">
+          <i class="fa-regular fa-calendar text-lg"></i>
+        </button>
+        
+        <div class="h-8 w-px bg-slate-200"></div>
+
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <p id="header-profile-name" class="text-sm font-bold text-slate-800 leading-none">Alex Thompson</p>
+            <p class="text-[10px] tracking-wider text-slate-400 font-semibold uppercase mt-1">Senior Manager</p>
+          </div>
+          <img id="top-profile-image" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100" alt="Alex Thompson Profile" class="w-9 h-9 rounded-full object-cover border border-slate-200" />
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 1: DASHBOARD                                         -->
+    <!-- ========================================================= -->
+    <div id="view-dashboard" class="p-4 sm:p-6 flex-1 space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Fleet Executive Overview</h2>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Real-time telemetry, operational status, and active driver dispatch.</p>
+        </div>
+        <button class="bg-blue-accent hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition w-fit flex items-center gap-2">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Dispatch Vehicle</span>
+        </button>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Fleet</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1">182 <span class="text-xs text-slate-400 font-medium">/ 250</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-truck"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mileage (Mo)</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1">124,500 <span class="text-xs text-slate-400 font-medium">km</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-route"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Maintenance Due</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1">14 <span class="text-xs text-amber-500 font-medium">Vehicles</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-wrench"></i>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Critical Alerts</p>
+            <p class="text-2xl font-extrabold text-slate-900 mt-1">3 <span class="text-xs text-rose-500 font-medium">Unresolved</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-slate-900 text-base">Upcoming Services</h3>
+            <span class="text-xs text-blue-600 bg-blue-50 font-bold px-2.5 py-1 rounded-full">Next Maintenance</span>
+          </div>
+          <div class="h-64 bg-slate-100 rounded-xl flex flex-col items-center justify-center relative overflow-hidden border border-slate-200">
+            <div class="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:16px_16px] opacity-60"></div>
+            <div class="relative text-center space-y-3">
+              <i class="fa-solid fa-calendar-days text-5xl text-blue-500"></i>
+              <p class="text-sm font-bold text-slate-800">Upcoming service schedule and maintenance reminders.</p>
+              <p class="text-xs font-medium text-slate-500">See the latest maintenance tasks and due dates for your fleet.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 text-base">Recent System Activity</h3>
+          <div class="space-y-3 text-xs">
+            <div class="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
+              <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5"></i>
+              <div>
+                <p class="font-bold text-slate-800">Route #9402 Completed</p>
+                <p class="text-slate-400 text-[10px]">Driver: Marcus Chen • 12 mins ago</p>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
+              <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+              <div>
+                <p class="font-bold text-slate-800">Low Tire Pressure Warning</p>
+                <p class="text-slate-400 text-[10px]">Vehicle FLT-3341 • 45 mins ago</p>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
+              <i class="fa-solid fa-file-invoice text-blue-500 mt-0.5"></i>
+              <div>
+                <p class="font-bold text-slate-800">New Fuel Expense Submitted</p>
+                <p class="text-slate-400 text-[10px]">Amount: $142.50 • 2 hrs ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GPS tracking view removed -->          </div>
+        </div>
+
+        <!-- Simulated Map Screen -->
+        <div class="lg:col-span-3 bg-slate-900 rounded-2xl p-6 min-h-[450px] relative flex flex-col justify-between overflow-hidden shadow-md">
+          <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
+          <div class="relative z-10 flex justify-between items-center">
+            <span class="bg-slate-800/80 text-xs font-mono text-emerald-400 px-3 py-1.5 rounded-lg border border-slate-700">LAT: 37.7749° N, LONG: 122.4194° W</span>
+            <span class="bg-blue-600 text-white font-bold text-xs px-3 py-1 rounded-full">GPS SIGNAL: 100%</span>
+          </div>
+
+          <div class="relative z-10 text-center my-auto space-y-3">
+            <i class="fa-solid fa-crosshairs text-5xl text-blue-500 animate-pulse"></i>
+            <h4 class="text-white font-bold text-lg">Interactive GPS Map Component</h4>
+            <p class="text-slate-400 text-xs max-w-md mx-auto">Tracking unit FLT-8829 on main corridor route. Estimated arrival in 1 hr 14 mins.</p>
+          </div>
+
+          <div class="relative z-10 bg-slate-800/90 border border-slate-700 rounded-xl p-3 flex justify-between items-center text-xs text-slate-300">
+            <span>Destination: <strong>Seattle Logistics Center</strong></span>
+            <span>ETA: <strong>14:45 PM</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 3: EXPENSE APPROVAL                                  -->
+    <!-- ========================================================= -->
+    <div id="view-expense" class="p-4 sm:p-6 flex-1 space-y-6 hidden">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Expense Approvals</h2>
+        <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Review and authorize fuel, maintenance, and toll receipts.</p>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-400 font-bold uppercase border-b border-slate-100">
+              <tr>
+                <th class="py-3 px-4">DRIVER / DATE</th>
+                <th class="py-3 px-4">CATEGORY</th>
+                <th class="py-3 px-4">AMOUNT</th>
+                <th class="py-3 px-4 text-right">ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="expense-table-body" class="divide-y divide-slate-100 font-medium">
+              <tr>
+                <td class="py-3.5 px-4">
+                  <p class="font-bold text-slate-900">Marcus Chen</p>
+                  <p class="text-[10px] text-slate-400">Oct 24, 2023</p>
+                </td>
+                <td class="py-3.5 px-4"><span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-md font-bold">Fuel Fill-up</span></td>
+                <td class="py-3.5 px-4 font-bold text-slate-900">$142.50</td>
+                <td class="py-3.5 px-4 text-right space-x-2">
+                  <button data-action="approve" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg transition">Approve</button>
+                  <button data-action="reject" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1 rounded-lg transition">Reject</button>
+                </td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-4">
+                  <p class="font-bold text-slate-900">Sarah Jenkins</p>
+                  <p class="text-[10px] text-slate-400">Oct 23, 2023</p>
+                </td>
+                <td class="py-3.5 px-4"><span class="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-md font-bold">Toll Pass</span></td>
+                <td class="py-3.5 px-4 font-bold text-slate-900">$18.00</td>
+                <td class="py-3.5 px-4 text-right space-x-2">
+                  <button data-action="approve" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg transition">Approve</button>
+                  <button data-action="reject" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1 rounded-lg transition">Reject</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 4: DRIVER ANALYTICS                                  -->
+    <!-- ========================================================= -->
+    <div id="view-analytics" class="p-4 sm:p-6 flex-1 space-y-6 hidden">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Driver Behavior &amp; Safety Analytics</h2>
+        <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Real-time performance monitoring and risk assessment for your fleet.</p>
+      </div>
+
+      <!-- KPI Cards Overview -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg text-xs font-bold">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1">AVG. SAFETY SCORE</p>
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-extrabold text-slate-900">88.4</span>
+              <span class="text-xs text-slate-400 font-bold">/100</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="bg-emerald-50 text-emerald-600 text-xs font-extrabold px-2 py-1 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-arrow-trend-up"></i> +2.4%
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 text-slate-600 bg-slate-100 w-fit px-2 py-0.5 rounded-lg text-xs font-bold">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1">ACTIVE DRIVERS</p>
+            <p class="text-2xl font-extrabold text-slate-900">42</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 text-rose-600 bg-rose-50 w-fit px-2 py-0.5 rounded-lg text-xs font-bold">
+              <i class="fa-solid fa-gauge-high"></i>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1">SPEEDING ALERTS</p>
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-extrabold text-slate-900">18</span>
+              <span class="text-xs text-slate-400 font-medium">pending</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="bg-rose-50 text-rose-600 text-xs font-extrabold px-2 py-1 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-arrow-trend-up"></i> +5%
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 text-blue-600 bg-blue-50 w-fit px-2 py-0.5 rounded-lg text-xs font-bold">
+              <i class="fa-solid fa-gas-pump"></i>
+            </div>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1">FUEL EFFICIENCY</p>
+            <div class="flex items-baseline gap-1">
+              <span class="text-2xl font-extrabold text-slate-900">12.5</span>
+              <span class="text-xs text-slate-400 font-medium">mpg</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="bg-rose-50 text-rose-600 text-xs font-extrabold px-2 py-1 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-arrow-trend-down"></i> -0.8%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Main Content -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+          <!-- Driver Safety Leaderboard -->
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-slate-900 text-sm sm:text-base">Driver Safety Leaderboard</h3>
+              <a href="#" class="text-xs font-bold text-blue-600 hover:underline">View All</a>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th class="py-2.5 px-3">RANK</th>
+                    <th class="py-2.5 px-3">DRIVER</th>
+                    <th class="py-2.5 px-3">VEHICLE ID</th>
+                    <th class="py-2.5 px-3">SAFETY SCORE</th>
+                    <th class="py-2.5 px-3 text-right">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50 font-medium">
+                  <tr>
+                    <td class="py-3 px-3 font-extrabold text-slate-900">#1</td>
+                    <td class="py-3 px-3 flex items-center gap-2.5">
+                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100" class="w-7 h-7 rounded-full object-cover" alt="Marcus Chen" />
+                      <span class="font-bold text-slate-900">Marcus Chen</span>
+                    </td>
+                    <td class="py-3 px-3 text-slate-500">FLT-8829</td>
+                    <td class="py-3 px-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div class="bg-emerald-500 h-full w-[98%]"></div>
+                        </div>
+                        <span class="font-bold text-slate-900">98</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-3 text-right">
+                      <span class="bg-emerald-50 text-emerald-600 font-bold px-2.5 py-1 rounded-full text-[10px]">Safe</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-3 font-extrabold text-slate-900">#2</td>
+                    <td class="py-3 px-3 flex items-center gap-2.5">
+                      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100" class="w-7 h-7 rounded-full object-cover" alt="Sarah Jenkins" />
+                      <span class="font-bold text-slate-900">Sarah Jenkins</span>
+                    </td>
+                    <td class="py-3 px-3 text-slate-500">FLT-1024</td>
+                    <td class="py-3 px-3">
+                      <div class="flex items-center gap-2">
+                        <div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div class="bg-emerald-500 h-full w-[95%]"></div>
+                        </div>
+                        <span class="font-bold text-slate-900">95</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-3 text-right">
+                      <span class="bg-emerald-50 text-emerald-600 font-bold px-2.5 py-1 rounded-full text-[10px]">Safe</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Trend Chart -->
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-bold text-slate-900 text-sm sm:text-base">Monthly Safety Score Trend</h3>
+              <button class="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-lg">Last 6 Months</button>
+            </div>
+            <div class="pt-4 pb-2">
+              <div class="relative h-44 w-full">
+                <svg class="w-full h-full overflow-visible" viewBox="0 0 500 150">
+                  <line x1="0" y1="30" x2="500" y2="30" stroke="#f1f5f9" stroke-width="1" />
+                  <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" stroke-width="1" />
+                  <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" stroke-width="1" />
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#1d63ed" stop-opacity="0.15" />
+                      <stop offset="100%" stop-color="#1d63ed" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 20 110 L 100 100 L 180 112 L 260 88 L 340 82 L 420 58 L 420 150 L 20 150 Z" fill="url(#chartGrad)" />
+                  <path d="M 20 110 L 100 100 L 180 112 L 260 88 L 340 82 L 420 58" fill="none" stroke="#1d63ed" stroke-width="3" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="space-y-6">
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <h3 class="font-bold text-slate-900 text-sm sm:text-base">Driving Behavior Insights</h3>
+            <div class="space-y-3 text-xs">
+              <div>
+                <div class="flex justify-between font-semibold text-slate-700 mb-1"><span>Harsh Braking</span><span class="text-emerald-600 font-bold">Low</span></div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-emerald-500 h-full w-[25%]"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between font-semibold text-slate-700 mb-1"><span>Overspeed Events</span><span class="text-rose-600 font-bold">High</span></div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-rose-500 h-full w-[85%]"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 5: SETTINGS (image_bfd059.png)                       -->
+    <!-- ========================================================= -->
+    <div id="view-settings" class="p-4 sm:p-6 flex-1 space-y-6 hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">System Settings</h2>
+          <p class="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">Global configurations and permissions overview.</p>
+        </div>
+        <button class="bg-blue-accent hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-md transition w-fit">
+          Save All Changes
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Profile Card -->
+        <div class="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+          <div class="relative mb-3">
+            <img id="profile-card-image" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200" alt="Alex Thompson" class="w-24 h-24 rounded-full object-cover border-2 border-white shadow-md" />
+            <input id="profile-image-input" type="file" accept="image/*" class="hidden" />
+            <button id="profile-image-trigger" type="button" class="absolute bottom-0 right-0 bg-blue-accent text-white w-7 h-7 rounded-full flex items-center justify-center shadow hover:bg-blue-700 transition text-xs border-2 border-white">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </div>
+          <h3 id="profile-name-display" class="font-extrabold text-slate-900 text-lg">Alex Thompson</h3>
+          <span class="bg-blue-50 text-blue-600 font-extrabold text-[10px] tracking-wider uppercase px-3 py-1 rounded-full mt-1">
+            FLEET DIRECTOR
+          </span>
+
+          <div class="w-full mt-8 space-y-3.5 text-xs border-t border-slate-100 pt-6">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-slate-900">Profile Details</h4>
+              <button id="edit-profile-btn" type="button" class="text-blue-accent font-bold text-[11px]">Edit</button>
+            </div>
+            <div id="profile-info-view" class="space-y-3.5">
+              <div class="flex justify-between items-center"><span class="text-slate-400 font-semibold">Email</span><span id="profile-email" class="font-bold text-slate-800">a.thompson@fleet.io</span></div>
+              <div class="flex justify-between items-center"><span class="text-slate-400 font-semibold">Phone</span><span id="profile-phone" class="font-bold text-slate-800">+1 (555) 092-4822</span></div>
+              <div class="flex justify-between items-center"><span class="text-slate-400 font-semibold">Company</span><span id="profile-company" class="font-bold text-slate-800">Global Logistics Inc.</span></div>
+              <div class="flex justify-between items-center"><span class="text-slate-400 font-semibold">Dept</span><span id="profile-dept" class="font-bold text-slate-800">Operations</span></div>
+            </div>
+            <div id="profile-info-edit" class="hidden space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Name</label>
+                <input id="profile-name-input" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Email</label>
+                <input id="profile-email-input" type="email" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Phone</label>
+                <input id="profile-phone-input" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Company</label>
+                <input id="profile-company-input" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Dept</label>
+                <input id="profile-dept-input" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" />
+              </div>
+              <div class="flex justify-end gap-2 pt-1">
+                <button id="cancel-profile-edit" type="button" class="text-xs font-semibold text-slate-600">Cancel</button>
+                <button id="save-profile-edit" type="button" class="rounded-lg bg-blue-accent px-3 py-1.5 text-xs font-semibold text-white">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Forms -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div class="md:col-span-7 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+              <div class="flex items-center gap-2 text-slate-900 font-bold text-sm">
+                <i class="fa-regular fa-square-minus text-blue-accent"></i>
+                <span>Fleet Configuration</span>
+              </div>
+              <div class="grid grid-cols-3 gap-3 pt-2">
+                <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Interval (km)</label><input type="text" value="10000" class="w-full bg-slate-100/80 text-xs font-bold text-slate-800 px-3 py-2 rounded-lg" /></div>
+                <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Fuel ($)</label><input type="text" value="45,000" class="w-full bg-slate-100/80 text-xs font-bold text-slate-800 px-3 py-2 rounded-lg" /></div>
+                <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Capacity</label><input type="text" value="250" class="w-full bg-slate-100/80 text-xs font-bold text-slate-800 px-3 py-2 rounded-lg" /></div>
+              </div>
+            </div>
+
+            <div class="md:col-span-5 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+              <div class="flex items-center gap-2 text-slate-900 font-bold text-sm"><i class="fa-regular fa-bell text-blue-accent"></i><span>Alert Preferences</span></div>
+              <div class="space-y-3 pt-1 text-xs">
+                <div class="flex items-center justify-between"><span class="font-semibold text-slate-700">Vehicle Alerts</span><input type="checkbox" checked class="accent-blue-600" /></div>
+                <div class="flex items-center justify-between"><span class="font-semibold text-slate-700">GPS Alerts</span><input type="checkbox" checked class="accent-blue-600" /></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Management -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-slate-900 font-bold text-sm"><i class="fa-solid fa-users-gear text-blue-accent"></i><span>User Management</span></div>
+              <button id="add-user-btn" type="button" class="border border-blue-accent text-blue-accent hover:bg-blue-50 text-xs font-bold px-3 py-1.5 rounded-lg">+ Add User</button>
+            </div>
+            <div id="add-user-form" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Name</label>
+                  <input id="new-user-name" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" required />
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Email</label>
+                  <input id="new-user-email" type="email" placeholder="example@gmail.com" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" required />
+                  <p class="mt-1 text-[10px] text-slate-400">Use a valid email format, such as @gmail.com</p>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Role</label>
+                  <input id="new-user-role" type="text" class="w-full bg-white text-xs font-bold text-slate-800 px-3 py-2 rounded-lg border border-slate-200" required />
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <p id="user-form-error" class="hidden text-[11px] font-semibold text-rose-500">Please fill in all fields to continue.</p>
+                <div class="ml-auto flex gap-2">
+                  <button id="cancel-user-form" type="button" class="text-xs font-semibold text-slate-600">Cancel</button>
+                  <button id="submit-user-btn" type="button" class="rounded-lg bg-blue-accent px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-blue-300" disabled>Submit</button>
+                </div>
+              </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="text-slate-400 font-bold uppercase border-b border-slate-100"><th class="py-2.5 px-2">NAME</th><th class="py-2.5 px-2">ROLE</th><th class="py-2.5 px-2">STATUS</th><th class="py-2.5 px-2">LAST ACTIVE</th></tr>
+                </thead>
+                <tbody id="user-table-body" class="divide-y divide-slate-50 font-medium">
+                  <tr>
+                    <td class="py-3 px-2 flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-[11px]">JS</div><div><p class="font-bold text-slate-900">Jordan Smith</p><p class="text-[10px] text-slate-400">jordan@fleet.com</p></div></td>
+                    <td class="py-3 px-2 text-slate-700">Lead Tech</td>
+                    <td class="py-3 px-2 text-emerald-600 font-bold">Active</td>
+                    <td class="py-3 px-2 text-slate-500">2h ago</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+          <div class="flex items-center gap-2 text-slate-900 font-bold text-sm"><i class="fa-solid fa-rotate text-blue-accent"></i><span>Security &amp; Password</span></div>
+          <div class="space-y-3">
+            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Current Password</label><input type="password" value="********" class="w-full bg-slate-100/80 text-xs font-bold text-slate-800 px-3 py-2 rounded-lg" /></div>
+          </div>
+        </div>
+        <div class="lg:col-span-5 bg-sidebar text-white p-6 rounded-2xl shadow-md flex flex-col justify-between space-y-6">
+          <div><h3 class="font-extrabold text-base">Fleet Command Pro</h3><p class="text-xs text-slate-400 mt-1">182 of 250 vehicle slots utilized.</p></div>
+          <div class="space-y-2"><div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden"><div class="bg-blue-accent h-full w-[72%]"></div></div><div class="flex justify-between text-[10px] font-extrabold text-slate-400"><span>72% USED</span><span>68 REMAINING</span></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="./main.js"></script>
+
+</body>
+</html>
