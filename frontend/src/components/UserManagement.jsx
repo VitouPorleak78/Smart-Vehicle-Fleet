@@ -1,46 +1,50 @@
-import React from 'react';
-import { Users, Shield } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 export default function UserManagement() {
-  const users = [
-    { id: 'USR-01', name: 'Alex Johnson', role: 'Administrator', email: 'alex.johnson@email.com' },
-    { id: 'USR-02', name: 'Sarah Smith', role: 'Dispatcher', email: 'sarah.s@email.com' },
-  ];
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:5000/api/admin/users')
+      .then(res => setUsers(res.data))
+      .catch(err => console.error("API Error:", err));
+  }, []);
 
   return (
-    <div className="p-8 space-y-6 bg-[#F1F5F9] min-h-screen text-slate-800">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">User Management</h1>
-        <p className="text-xs text-slate-500 mt-1">Manage system personnel profiles, access controls, and administrative privileges.</p>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-              <th className="p-4">User ID</th>
-              <th className="p-4">Name</th>
-              <th className="p-4">Email Address</th>
-              <th className="p-4">Access Role</th>
+    <div style={{ padding: '40px', fontFamily: 'Arial, sans-serif' }}>
+      <h1 style={{ color: '#003366' }}>User Management</h1>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#0056b3', color: 'white', textAlign: 'left' }}>
+            <th style={{ padding: '15px' }}>ID</th>
+            <th style={{ padding: '15px' }}>Name</th>
+            <th style={{ padding: '15px' }}>Email</th>
+            <th style={{ padding: '15px' }}>Role</th>
+            <th style={{ padding: '15px' }}>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user, index) => (
+            <tr key={user.id} style={{ borderBottom: '1px solid #ddd', backgroundColor: index % 2 === 0 ? '#f9f9f9' : 'white' }}>
+              <td style={{ padding: '15px' }}>{user.id}</td>
+              <td style={{ padding: '15px' }}>{user.name}</td>
+              <td style={{ padding: '15px' }}>{user.email}</td>
+              <td style={{ padding: '15px' }}>{user.role}</td>
+              <td style={{ padding: '15px' }}>
+                <span style={{ 
+                  padding: '5px 10px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px',
+                  backgroundColor: user.status === 'Active' ? '#d4edda' : '#fff3cd',
+                  color: user.status === 'Active' ? '#155724' : '#856404'
+                }}>
+                  {user.status}
+                </span>
+              </td>
             </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 text-slate-700">
-            {users.map((user) => (
-              <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                <td className="p-4 font-mono text-slate-400">{user.id}</td>
-                <td className="p-4 font-bold text-slate-900">{user.name}</td>
-                <td className="p-4 text-slate-600">{user.email}</td>
-                <td className="p-4">
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-medium text-[10px] uppercase">
-                    <Shield className="h-3 w-3 text-slate-400" />
-                    {user.role}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
