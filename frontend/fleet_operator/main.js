@@ -16,7 +16,7 @@ if (overlay) {
 }
 
 function switchTab(viewName) {
-  const views = ['dashboard', 'expense', 'analytics', 'settings'];
+  const views = ['dashboard', 'expense', 'analytics', 'add-driver', 'settings'];
 
   views.forEach((view) => {
     const viewEl = document.getElementById(`view-${view}`);
@@ -455,3 +455,37 @@ if (submitUserBtn) {
 }
 
 window.switchTab = switchTab;
+
+// Add Driver form handlers
+const saveDriverBtn = document.getElementById('save-driver-btn');
+const cancelDriverBtn = document.getElementById('cancel-driver-btn');
+const addDriverForm = document.getElementById('add-driver-form');
+
+function clearAddDriverForm() {
+  if (!addDriverForm) return;
+  addDriverForm.querySelectorAll('input').forEach((i) => i.value = '');
+  const sel = addDriverForm.querySelector('select');
+  if (sel) sel.selectedIndex = 0;
+}
+
+if (cancelDriverBtn) {
+  cancelDriverBtn.addEventListener('click', () => {
+    clearAddDriverForm();
+    switchTab('dashboard');
+  });
+}
+
+if (saveDriverBtn) {
+  saveDriverBtn.addEventListener('click', () => {
+    const first = document.getElementById('driver-first')?.value.trim() || '';
+    const last = document.getElementById('driver-last')?.value.trim() || '';
+    if (!first || !last) {
+      alert('Please enter the driver\'s first and last name.');
+      return;
+    }
+    // For now, just show a confirmation and clear the form
+    alert(`Driver ${first} ${last} saved.`);
+    clearAddDriverForm();
+    switchTab('dashboard');
+  });
+}
