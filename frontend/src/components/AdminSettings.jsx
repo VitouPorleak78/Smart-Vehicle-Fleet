@@ -1,197 +1,259 @@
 import React, { useState } from 'react';
+import { Save, ShieldAlert, Cpu, HardDrive, CheckCircle2, Shield, Edit2, X, FileText, Trash2 } from 'lucide-react';
 
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState('profile');
-  const [fullName, setFullName] = useState('Marcus Thorne');
-  const [role] = useState('Fleet Administrator');
-  const [email, setEmail] = useState('admin.thorne@fleetintel.com');
-  const [phone, setPhone] = useState('+1 (555) 234-8800');
-  const [bio, setBio] = useState('Dedicated fleet management professional with over 8 years of experience in logistics optimization and system administration.');
+  // 1. Admin Profile State (Now Editable!)
+  const [adminInfo, setAdminInfo] = useState({
+    name: 'Marcus Thorne',
+    email: 'm.thorne@fleetmanagement.com',
+    clearance: 'Super Admin',
+    status: 'Active'
+  });
+  
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [tempProfileData, setTempProfileData] = useState({ ...adminInfo });
 
-  function handleSaveProfile(e) {
-    e.preventDefault();
-    console.log('Save profile', { fullName, email, phone, bio });
-    alert('Admin details saved (demo)');
-  }
+  // 2. Settings configurations memory
+  const [settings, setSettings] = useState({
+    serverRefreshRate: '30',
+    encryptionTier: 'AES-256-GCM',
+    enableGlobalTelemetry: true
+  });
 
-  function handleSaveNotifications(e) {
-    e.preventDefault();
-    alert('Notification preferences saved (demo)');
-  }
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [profileSavedSuccess, setProfileSavedSuccess] = useState(false);
 
-  function handleUpdatePassword(e) {
+  // Handle Profile Update Submission
+  const handleProfileSave = (e) => {
     e.preventDefault();
-    alert('Password updated (demo)');
-  }
+    setAdminInfo({ ...tempProfileData });
+    setIsEditingProfile(false);
+    setProfileSavedSuccess(true);
+    setTimeout(() => setProfileSavedSuccess(false), 3000);
+  };
+
+  // Handle Core Settings Save
+  const handleSettingsSave = (e) => {
+    e.preventDefault();
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  // Helper actions for the "More Features" section
+  const triggerLogDownload = () => alert('Generating full encrypted telematics system log package... Download starting.');
+  const clearSystemCache = () => alert('Application local cache purged successfully. Refreshing connection tokens.');
 
   return (
-    <div className="p-8 h-full overflow-auto">
-      <div className="max-w-[1600px] mx-auto">
-        <div className="mb-6">
-          <h2 className="text-4xl font-semibold">Admin Settings</h2>
-          <p className="text-slate-600 mt-2">Manage administrative profile, system permissions, and organization preferences</p>
-        </div>
+    <div className="p-8 space-y-6 max-w-2xl">
+      {/* Page Title */}
+      <div>
+        <h1 className="text-xl font-black text-slate-900 tracking-tight">System Settings</h1>
+        <p className="text-xs text-slate-500 mt-1">Review active operator credentials and manage application data behavior.</p>
+      </div>
 
-        <div className="border-b border-slate-200 flex gap-10 mb-6">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`relative py-4 px-2 text-lg ${activeTab === 'profile' ? 'text-secondary' : 'text-slate-600'}`}
-          >
-            Admin Profile
-            <div className={`active-tab-indicator ${activeTab === 'profile' ? '' : 'hidden'}`} />
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`relative py-4 px-2 text-lg ${activeTab === 'notifications' ? 'text-secondary' : 'text-slate-600'}`}
-          >
-            System Notifications
-            <div className={`active-tab-indicator ${activeTab === 'notifications' ? '' : 'hidden'}`} />
-          </button>
-          <button
-            onClick={() => setActiveTab('password')}
-            className={`relative py-4 px-2 text-lg ${activeTab === 'password' ? 'text-secondary' : 'text-slate-600'}`}
-          >
-            Security
-            <div className={`active-tab-indicator ${activeTab === 'password' ? '' : 'hidden'}`} />
-          </button>
-        </div>
+      {/* ─── INTERACTIVE ADMIN PROFILE CARD WITH EDIT FUNCTION ─── */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-2xs relative">
+        {/* Profile Success Message */}
+        {profileSavedSuccess && (
+          <div className="absolute top-3 right-3 bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 text-[10px] px-2 py-1 rounded-md flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Profile Updated
+          </div>
+        )}
 
-        <div className="grid grid-cols-12 gap-10">
-          {activeTab === 'profile' && (
-            <>
-              <div className="col-span-4">
-                <div className="bg-white rounded-xl p-8 border shadow-sm text-center sticky top-6">
-                  <div className="relative inline-block mb-6">
-                    <img alt="Admin Portrait" className="w-48 h-48 rounded-full mx-auto object-cover border-4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYkGYnqWYqMzSkS7TAzb0ZYoX-dCtdxmdKhrdkh4ND71pOeNLjNwZwllecmczC1lvedaZW2DpQnzIre3nTClYA0EVbP7vPtZwcxW5wk3IVs-_laoTQiQjEIImnnqCZ7jppVVRChaW9HkMEtphBxVTo_YqSVAo1DvsCwV6QBYM0TaI8EO8HslI-VzwY2SvjAJLw7YDoHdgVutiPFOgCR28HO0r0tC9j-6YB6tBj6un2txVmIrjKDec5lWtzQo49msaEorOK7mmQH8xB" />
-                    <button className="absolute bottom-2 right-2 bg-secondary text-white p-2.5 rounded-full">
-                      <span className="material-symbols-outlined">edit</span>
-                    </button>
-                  </div>
-                  <h3 className="text-2xl font-semibold">{fullName}</h3>
-                  <p className="text-sm text-secondary mt-1">{role}</p>
-                  <div className="mt-6 text-left border-t pt-6 space-y-4">
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <span className="material-symbols-outlined">admin_panel_settings</span>
-                      <span>Level: Super Admin</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <span className="material-symbols-outlined">calendar_today</span>
-                      <span>Managed since Oct 2021</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-slate-600">
-                      <span className="material-symbols-outlined">verified_user</span>
-                      <span>Identity Verified</span>
-                    </div>
-                  </div>
-                </div>
+        {!isEditingProfile ? (
+          // View Mode Layout
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative h-10 w-10 overflow-hidden bg-sky-200 text-sky-800 rounded-full flex items-center justify-center font-bold text-sm shadow-xs">
+                <span>{adminInfo.name.split(' ').map(n => n[0]).join('')}</span>
+                <img
+                  src="/admin-avatar.jpg"
+                  alt={adminInfo.name}
+                  onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
               </div>
-
-              <div className="col-span-8">
-                <div className="bg-white rounded-xl p-8 border shadow-sm h-full flex flex-col">
-                  <h4 className="text-2xl mb-6 flex items-center gap-2"><span className="material-symbols-outlined">person</span> Admin Information</h4>
-                  <form className="grid grid-cols-2 gap-6 flex-1" onSubmit={handleSaveProfile}>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600">Full Name</label>
-                      <input className="w-full rounded-lg p-3 border mt-2" value={fullName} onChange={e => setFullName(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600">Role</label>
-                      <input className="w-full rounded-lg p-3 border mt-2 bg-slate-50" value={role} readOnly />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600">Admin Email</label>
-                      <input className="w-full rounded-lg p-3 border mt-2" value={email} onChange={e => setEmail(e.target.value)} type="email" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-600">Direct Line</label>
-                      <input className="w-full rounded-lg p-3 border mt-2" value={phone} onChange={e => setPhone(e.target.value)} />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-semibold text-slate-600">Professional Bio</label>
-                      <textarea className="w-full rounded-lg p-3 border mt-2 min-h-[120px]" value={bio} onChange={e => setBio(e.target.value)} />
-                    </div>
-                    <div className="col-span-2 flex justify-end mt-4">
-                      <button className="bg-secondary text-white px-6 py-3 rounded-lg" type="submit">Save Admin Details</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'notifications' && (
-            <div className="col-span-12">
-              <div className="bg-white rounded-xl p-8 border shadow-sm">
-                <h4 className="text-2xl mb-4">System Notification Preferences</h4>
-                <p className="text-slate-600 mb-6">Choose how you want to be alerted about critical fleet management and system-wide activities.</p>
-                <form onSubmit={handleSaveNotifications} className="grid grid-cols-2 gap-6">
-                  {[
-                    { title: 'Fleet Downtime Alerts', desc: 'Get notified when more than 5% of the fleet is inactive', checked: true },
-                    { title: 'Staff Requests', desc: 'Alerts for new technician access requests', checked: true },
-                    { title: 'Budget Overages', desc: 'Monthly forecast notifications', checked: false },
-                    { title: 'Security Patch Updates', desc: 'Critical system software notices', checked: true }
-                  ].map(item => (
-                    <div key={item.title} className="flex items-center justify-between p-6 bg-slate-50 rounded-lg">
-                      <div>
-                        <p className="font-semibold">{item.title}</p>
-                        <p className="text-sm text-slate-500">{item.desc}</p>
-                      </div>
-                      <label className="inline-flex items-center">
-                        <input defaultChecked={item.checked} type="checkbox" className="mr-2" />
-                      </label>
-                    </div>
-                  ))}
-                  <div className="col-span-2 flex justify-end mt-4">
-                    <button className="bg-secondary text-white px-6 py-3 rounded-lg">Save System Preferences</button>
-                  </div>
-                </form>
+              <div>
+                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  {adminInfo.name} 
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 text-sky-600 text-[10px] font-bold border border-sky-100">
+                    <Shield className="h-2.5 w-2.5" /> {adminInfo.clearance}
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">{adminInfo.email}</p>
               </div>
             </div>
-          )}
-
-          {activeTab === 'password' && (
-            <div className="col-span-12">
-              <div className="bg-white rounded-xl p-8 border shadow-sm max-w-2xl mx-auto">
-                <h4 className="text-2xl mb-4">Admin Security</h4>
-                <p className="text-slate-600 mb-6">Ensure your administrative account is secured with multi-factor authentication and a strong password.</p>
-                <form onSubmit={handleUpdatePassword} className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-600">Current Admin Password</label>
-                    <div className="relative mt-2">
-                      <input type="password" placeholder="••••••••" className="w-full rounded-lg p-3 border" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-600">New Admin Password</label>
-                    <div className="relative mt-2">
-                      <input type="password" placeholder="••••••••" className="w-full rounded-lg p-3 border" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-600">Confirm New Password</label>
-                    <div className="relative mt-2">
-                      <input type="password" placeholder="••••••••" className="w-full rounded-lg p-3 border" />
-                    </div>
-                  </div>
-                  <div className="p-6 bg-slate-50 rounded-lg">
-                    <p className="font-semibold mb-3">Security Requirements</p>
-                    <ul className="list-none space-y-2 text-sm text-slate-600">
-                      <li>Minimum 12 characters for Admin accounts</li>
-                      <li>At least one special character and number</li>
-                      <li>2FA must be enabled (Recommended)</li>
-                      <li>Hardware security key support</li>
-                    </ul>
-                  </div>
-                  <div className="col-span-2 flex justify-end mt-2">
-                    <button className="bg-secondary text-white px-6 py-3 rounded-lg">Update Admin Password</button>
-                  </div>
-                </form>
+            <button 
+              onClick={() => { setTempProfileData({ ...adminInfo }); setIsEditingProfile(true); }}
+              className="px-2.5 py-1.5 border border-slate-200 rounded-lg text-slate-600 font-bold text-[11px] bg-white hover:bg-slate-50 shadow-2xs flex items-center gap-1.5 transition-all"
+            >
+              <Edit2 className="h-3 w-3" /> Edit Profile
+            </button>
+          </div>
+        ) : (
+          // Interactive Edit Mode Form
+          <form onSubmit={handleProfileSave} className="space-y-4">
+            <h4 className="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Modify Account Context</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Admin Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={tempProfileData.name}
+                  onChange={(e) => setTempProfileData({ ...tempProfileData, name: e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">Contact Email</label>
+                <input 
+                  type="email" 
+                  required
+                  value={tempProfileData.email}
+                  onChange={(e) => setTempProfileData({ ...tempProfileData, email: e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                />
               </div>
             </div>
-          )}
+            <div className="flex justify-end gap-2 pt-1">
+              <button 
+                type="button" 
+                onClick={() => setIsEditingProfile(false)}
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-500 font-semibold text-xs bg-white hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit"
+                className="px-3 py-1.5 bg-sky-400 text-sky-950 font-bold text-xs rounded-lg hover:bg-sky-500 shadow-2xs"
+              >
+                Apply Details
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
 
+      {/* Settings Card Panel */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        <form onSubmit={handleSettingsSave} className="p-6 space-y-6">
+          
+          {/* Setting 1: Refresh Rate */}
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-sky-50 border border-sky-100 rounded-lg text-sky-600">
+              <Cpu className="h-4 w-4" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-bold text-slate-900 block">Update Frequency (in seconds)</label>
+              <input 
+                type="number" 
+                min="1"
+                max="300"
+                value={settings.serverRefreshRate}
+                onChange={(e) => setSettings({...settings, serverRefreshRate: e.target.value})}
+                className="w-full sm:w-32 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+              />
+              <p className="text-[11px] text-slate-400">How often the vehicles send live data updates back to this screen.</p>
+            </div>
+          </div>
+
+          <div className="h-[1px] bg-slate-100" />
+
+          {/* Setting 2: Security Type */}
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-sky-50 border border-sky-100 rounded-lg text-sky-600">
+              <HardDrive className="h-4 w-4" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <label className="text-xs font-bold text-slate-900 block">Security Lock Level</label>
+              <select 
+                value={settings.encryptionTier}
+                onChange={(e) => setSettings({...settings, encryptionTier: e.target.value})}
+                className="w-full sm:w-64 bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+              >
+                <option value="AES-256-GCM">High Security (Standard Vault)</option>
+                <option value="ChaCha20-Poly1305">Balanced Security (Low Battery Usage)</option>
+              </select>
+              <p className="text-[11px] text-slate-400">The method used to lock and encrypt all incoming fleet network data packets.</p>
+            </div>
+          </div>
+
+          <div className="h-[1px] bg-slate-100" />
+
+          {/* Setting 3: Master Tracking Switch */}
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-sky-50 border border-sky-100 rounded-lg text-sky-600">
+              <ShieldAlert className="h-4 w-4" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-900 cursor-pointer select-none" htmlFor="telemetry-toggle">
+                  Enable Live Vehicle Tracking
+                </label>
+                <input 
+                  id="telemetry-toggle"
+                  type="checkbox" 
+                  checked={settings.enableGlobalTelemetry}
+                  onChange={(e) => setSettings({...settings, enableGlobalTelemetry: e.target.checked})}
+                  className="h-4 w-4 text-sky-500 rounded border-slate-300 focus:ring-sky-400 cursor-pointer"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">Master toggle switch. Turn off to stop recording telemetry parameters instantly.</p>
+            </div>
+          </div>
+
+          {/* Bottom Control Action Bar */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between h-12">
+            <div>
+              {savedSuccess && (
+                <span className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 animate-fadeIn">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Changes Saved!
+                </span>
+              )}
+            </div>
+            <button 
+              type="submit"
+              className="px-4 py-2 bg-sky-400 hover:bg-sky-500 text-sky-950 rounded-lg font-bold text-xs shadow-sm transition-all flex items-center gap-2"
+            >
+              <Save className="h-3.5 w-3.5" /> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ─── NEW FEATURE: SYSTEM SHORTCUT UTILITIES ─── */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+        <div>
+          <h2 className="text-xs font-bold text-slate-900 tracking-wide uppercase">Advanced Quick Actions</h2>
+          <p className="text-[11px] text-slate-400 mt-0.5">Quick maintenance commands for immediate app cleanup.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button 
+            onClick={triggerLogDownload}
+            className="p-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-lg text-left text-xs font-bold text-slate-700 flex items-center gap-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white border border-slate-200 rounded-md text-slate-500"><FileText className="h-4 w-4" /></div>
+            <div>
+              <span>Download Logs</span>
+              <span className="text-[10px] text-slate-400 block font-normal mt-0.5">Export live data spreadsheet text.</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={clearSystemCache}
+            className="p-3 bg-rose-50/40 hover:bg-rose-50 border border-rose-100 rounded-lg text-left text-xs font-bold text-rose-800 flex items-center gap-3 transition-colors"
+          >
+            <div className="p-1.5 bg-white border border-rose-200 rounded-md text-rose-500"><Trash2 className="h-4 w-4 text-rose-500" /></div>
+            <div>
+              <span>Wipe Data Cache</span>
+              <span className="text-[10px] text-rose-600/70 block font-normal mt-0.5">Force flush system memories.</span>
+            </div>
+          </button>
         </div>
       </div>
+
     </div>
   );
 }

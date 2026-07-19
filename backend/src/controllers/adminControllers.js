@@ -1,92 +1,78 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 
-class AdminController {
-  
-  // 📈 1. EXECUTIVE DASHBOARD: Summary metrics
-  async getDashboardMetrics(req, res) {
-    try {
-      const [totalAssets] = await db.execute(`SELECT COUNT(*) as count FROM FleetVehicles`);
-      const [activeTrips] = await db.execute(`SELECT COUNT(*) as count FROM FleetVehicles WHERE telemetry_status = 'In Transit'`);
-      const [criticalAlerts] = await db.execute(`SELECT COUNT(*) as count FROM FleetVehicles WHERE health_score < 70 OR telemetry_status = 'Critical Error'`);
-      
-      return res.status(200).json({
-        totalAssets: totalAssets[0].count || 0,
-        activeTrips: activeTrips[0].count || 0,
-        criticalAlerts: criticalAlerts[0].count || 0
-      });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to load dashboard metrics." });
-    }
+const getUsers = async (req, res, next) => {
+  try {
+    const [users] = await pool.query(
+      'SELECT id, name, email, role, status FROM users ORDER BY id ASC'
+    );
+
+    res.status(200).json({ success: true, count: users.length, data: users });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createUser = async (req, res, next) => {
+  const name = req.body.name?.trim();
+  const email = req.body.email?.trim().toLowerCase();
+  const role = req.body.role?.trim();
+  const status = req.body.status?.trim();
+
+  if (!name || !email || !role || !status) {
+    return res.status(400).json({ success: false, message: 'Name, email, role, and status are required.' });
   }
 
-  // 🛠️ 2. MAINTENANCE LOGS: History lists
-  async getMaintenanceLogs(req, res) {
-    try {
-      const [logs] = await db.execute(`
-        SELECT m.id, m.vehicle_id as vehicleId, m.maintenance_type as type, 
-               u.full_name as technician, m.log_date as date, m.status, m.cost
-        FROM MaintenanceLogs m
-        LEFT JOIN SystemUsers u ON m.technician_id = u.id
-        ORDER BY m.log_date DESC
-      `);
-      return res.status(200).json(logs);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to fetch maintenance data." });
-    }
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'A valid email address is required.' });
   }
 
-  // 🏥 3. FLEET HEALTH: Live health grid indicators
-  async getFleetHealthData(req, res) {
-    try {
-      const [vehicles] = await db.execute(`
-        SELECT id, make, model, telemetry_status as status, health_score as healthScore, 
-               fuel_level_percent as fuel, coolant_temp_f as coolantTemp 
-        FROM FleetVehicles
-        ORDER BY health_score ASC
-      `);
-      return res.status(200).json(vehicles);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to gather real-time status details." });
-    }
+  if (name.length > 100 || email.length > 150 || role.length > 50 || status.length > 50) {
+    return res.status(400).json({ success: false, message: 'One or more fields exceed the database limits.' });
   }
 
-  // 👥 4. USER MANAGEMENT: Populates the exact screen you designed
-  async getUsers(req, res) {
-    try {
-      const search = req.query.search ? `%${req.query.search}%` : '%';
-      const role = req.query.role || 'All Roles';
-      
-      let query = `SELECT id, full_name as name, email, role, status FROM SystemUsers WHERE (full_name LIKE ? OR email LIKE ?)`;
-      const params = [search, search];
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-      if (role !== 'All Roles') {
-        query += ` AND role = ?`;
-        params.push(role);
-      }
+    const [rows] = await connection.query(
+      "SELECT COALESCE(MAX(CAST(SUBSTRING(id, 5) AS UNSIGNED)), 0) AS lastId FROM users WHERE id REGEXP '^USR-[0-9]+$' FOR UPDATE"
+    );
+    const id = `USR-${String(Number(rows[0].lastId) + 1).padStart(2, '0')}`;
 
-      const [users] = await db.execute(query, params);
-      return res.status(200).json(users);
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to search operational credentials." });
+    await connection.query(
+      'INSERT INTO users (id, name, email, role, status) VALUES (?, ?, ?, ?, ?)',
+      [id, name, email, role, status]
+    );
+    await connection.commit();
+
+    return res.status(201).json({ success: true, data: { id, name, email, role, status } });
+  } catch (error) {
+    if (connection) await connection.rollback();
+
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ success: false, message: 'A user with this email already exists.' });
     }
+
+    return next(error);
+  } finally {
+    if (connection) connection.release();
   }
+};
 
-  // ⚙️ 5. ADMIN SETTINGS: Saves administrative settings 
-  async updateAdminProfile(req, res) {
-    try {
-      const { fullName, phone, email } = req.body;
-      const adminId = req.user?.id || 1; // Fallback to Alex Rivera default
+const getServiceSummary = async (req, res, next) => {
+  try {
+    const mockSummary = {
+      activeAlerts: 4,
+      fleetUtilization: '87.4%',
+      pendingMaintenanceJobs: 12,
+      systemStatus: 'Optimal'
+    };
 
-      await db.execute(
-        `UPDATE SystemUsers SET full_name = ?, phone = ?, email = ? WHERE id = ?`,
-        [fullName, phone, email, adminId]
-      );
-      
-      return res.status(200).json({ message: "Administrative core updates saved safely." });
-    } catch (error) {
-      return res.status(500).json({ error: "System settings synchronization error." });
-    }
+    res.status(200).json({ success: true, data: mockSummary });
+  } catch (error) {
+    next(error);
   }
-}
+};
 
-module.exports = new AdminController();
+module.exports = { getUsers, createUser, getServiceSummary };

@@ -1,12 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const protect = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminControllers');
 
-// Define specific routes mapping directly to your five frontend panel sections
-router.get('/dashboard/metrics', adminController.getDashboardMetrics);
-router.get('/maintenance/logs', adminController.getMaintenanceLogs);
-router.get('/fleet/health', adminController.getFleetHealthData);
-router.get('/users', adminController.getUsers);
-router.put('/settings', adminController.updateAdminProfile);
+// Injecting 'protect' middleware right in front of endpoints
+router.get('/users', protect, adminController.getUsers);
+router.post('/users', protect, adminController.createUser);
+router.get('/service-summary', protect, adminController.getServiceSummary);
 
 module.exports = router;

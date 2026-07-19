@@ -1,86 +1,109 @@
 import React, { useState } from 'react';
 import AdminDashboard from './components/AdminDashboard';
 import MaintenanceLogs from './components/MaintenanceLogs';
-import FleetHealth from './components/FleetHealth';
 import UserManagement from './components/UserManagement';
 import AdminSettings from './components/AdminSettings';
+import FleetHealth from './components/FleetHealth';
+import Logo from './components/Logo';
+import { LayoutDashboard, ShieldAlert, Users, Settings, Wrench, Search, Bell } from 'lucide-react';
 
 export default function App() {
-  // Navigation active tab router state
-  const [activeTab, setActiveTab] = useState('User Management');
+  const [currentTab, setCurrentTab] = useState('dashboard');
 
-  // Dynamic canvas component router switcher
-  const renderActiveScreen = () => {
-    switch (activeTab) {
-      case 'Dashboard':        return <AdminDashboard />;
-      case 'Maintenance Logs': return <MaintenanceLogs />;
-      case 'Fleet Health':     return <FleetHealth />;
-      case 'User Management':  return <UserManagement />;
-      case 'Admin Settings':   return <AdminSettings />;
-      default:                 return <UserManagement />;
-    }
-  };
+  // Navigation Links matching your Figma blueprints
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'health', label: 'Fleet Health', icon: ShieldAlert },
+    { id: 'users', label: 'User Management', icon: Users },
+    { id: 'maintenance', label: 'Maintenance Log', icon: Wrench },
+    { id: 'settings', label: 'Admin Settings', icon: Settings },
+  ];
 
   return (
-    <div className="bg-[#f8f9ff] text-[#0b1c30] flex h-screen w-screen overflow-hidden font-['Inter',_sans-serif]">
-      
-      {/* 🧭 Fleet Operations Navigation Sidebar */}
-      <aside className="w-[260px] h-full bg-[#031635] border-r border-[#c5c6cf]/10 flex flex-col flex-shrink-0 z-50">
-        <div className="px-6 py-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-[#0266ff] rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-xl">dataset</span>
-            </div>
-            <div>
-              <h1 className="text-white font-bold text-lg leading-tight">Fleet Intel</h1>
-              <p className="text-[#8293b8] text-xs">Administrative Suite</p>
-            </div>
+    <div className="flex min-h-screen bg-[#F4F7FC]">
+      {/* 1. Left Hand Deep Navy Sidebar Container */}
+      <aside className="w-64 bg-sky-100 text-slate-600 flex flex-col justify-between border-r border-sky-200 shrink-0">
+        <div>
+          {/* Integrated Branded Logo Header Area */}
+          <div className="p-6 border-b border-sky-200">
+            <Logo variant="light" size="md" />
           </div>
+          
+          {/* Sidebar Tabs */}
+          <nav className="p-4 space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                    isActive 
+                    ? 'bg-sky-300 text-sky-950 shadow-md shadow-sky-300/40' 
+                    : 'hover:bg-sky-200 hover:text-sky-950'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-sky-950' : 'text-sky-600'}`} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
         </div>
 
-        {/* Sidebar Options Render Pipeline */}
-        <nav className="flex-1 px-4 space-y-1">
-          {[
-            { name: 'Dashboard', icon: 'grid_view' },
-            { name: 'Maintenance Logs', icon: 'build' },
-            { name: 'Fleet Health', icon: 'analytics' },
-            { name: 'User Management', icon: 'manage_accounts' },
-            { name: 'Admin Settings', icon: 'settings' }
-          ].map((item) => (
-            <button
-              key={item.name}
-              onClick={() => setActiveTab(item.name)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                activeTab === item.name 
-                  ? 'bg-[#0266ff] text-white shadow-lg shadow-[#0266ff]/20' 
-                  : 'text-[#8293b8] hover:bg-white/5'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl">{item.icon}</span>
-              <span className="text-sm font-medium">{item.name}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Admin Session Workspace Identity */}
-        <div className="p-6 mt-auto">
-          <div className="bg-white/5 rounded-2xl p-4 flex items-center gap-3 border border-white/10">
-            <div className="w-10 h-10 rounded-full border-2 border-[#0266ff] bg-slate-600 flex items-center justify-center text-white font-bold text-sm">
-              AR
-            </div>
-            <div className="min-w-0">
-              <p className="text-white text-sm font-semibold truncate">Alex Rivera</p>
-              <p className="text-[#8293b8] text-xs truncate">Senior Admin</p>
-            </div>
+        {/* User Footer Profile Card */}
+        <div className="p-4 border-t border-sky-200 bg-sky-200/50 flex items-center gap-3">
+          <div className="relative h-8 w-8 overflow-hidden rounded-full bg-sky-200 border border-sky-300 text-sky-800 font-bold text-xs flex items-center justify-center">
+            <span>MT</span>
+            <img
+              src="/admin-avatar.jpg"
+              alt="Marcus Thorne"
+              onError={(event) => { event.currentTarget.style.display = 'none'; }}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-sky-950 leading-none">Marcus Thorne</p>
+            <span className="text-[10px] text-sky-700 mt-1 block">Super Admin</span>
           </div>
         </div>
       </aside>
 
-      {/* 🖥️ Component Display Target Window Viewport */}
-      <main className="flex-1 flex flex-col min-w-0 h-full">
-        {renderActiveScreen()}
-      </main>
+      {/* 2. Right Side Workspace Area */}
+      <div className="flex-1 flex flex-col overflow-x-hidden">
+        {/* Persistent Top Search Utility Header Bar */}
+        <header className="h-16 bg-white border-b border-[#E2E8F0] px-8 flex items-center justify-between shadow-sm shrink-0">
+          <div className="relative w-80">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search systems, SKUs, or assets..." 
+              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-sky-400"
+            />
+          </div>
+          <div className="flex items-center gap-4 text-slate-600">
+            <button className="relative p-1.5 hover:bg-slate-100 rounded-full transition-colors">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 bg-red-500 rounded-full" />
+            </button>
+            <div className="h-4 w-[1px] bg-[#E2E8F0]" />
+            <span className="text-xs font-bold text-[#0F172A] bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 text-emerald-600 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              System Live
+            </span>
+          </div>
+        </header>
 
+        {/* Dynamic Screen Mounting Portal */}
+        <main className="flex-1 overflow-y-auto">
+          {currentTab === 'dashboard' && <AdminDashboard />}
+          {currentTab === 'health' && <FleetHealth />}
+          {currentTab === 'users' && <UserManagement />}
+          {currentTab === 'maintenance' && <MaintenanceLogs />}
+          {currentTab === 'settings' && <AdminSettings />}
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,147 +1,253 @@
-import React from 'react';
-
-const users = [
-  {
-    initials: 'JD',
-    name: 'Jordan Davies',
-    email: 'j.davies@fleetintel.com',
-    role: 'System Admin',
-    state: 'Active Now',
-    badgeClass: 'bg-emerald-100 text-emerald-700',
-    stateDot: 'bg-emerald-600',
-    actions: ['Edit Policies', 'Revoke Access']
-  },
-  {
-    initials: 'SM',
-    name: 'Sarah Miller',
-    email: 's.miller@fleetintel.com',
-    role: 'Fleet Manager',
-    state: 'Offline',
-    badgeClass: 'bg-slate-100 text-slate-500',
-    stateDot: 'bg-slate-400',
-    actions: ['Edit Policies', 'Revoke Access']
-  }
-];
+import React, { useState, useEffect } from 'react';
+import { UserPlus, Shield, CheckCircle, AlertTriangle, Loader2, X, Search } from 'lucide-react';
 
 export default function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Interactive Panel States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'DRIVER', status: 'Active' });
+
+  // Fetch directory list from running backend server
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/v1/admin/users', {
+          headers: {
+            'Authorization': 'Bearer super_secret_fleet_intel_token_signature_key_2026'
+          }
+        });
+        
+        if (!response.ok) throw new Error('Failed to stream live directory matrix.');
+        
+        const resData = await response.json();
+        setUsers(resData.data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Live client-side search query filtering
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Persist a new profile in the directory database.
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    if (!newUserData.name || !newUserData.email) return alert('Please fill out all required fields.');
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer super_secret_fleet_intel_token_signature_key_2026'
+        },
+        body: JSON.stringify(newUserData)
+      });
+      const resData = await response.json();
+
+      if (!response.ok) throw new Error(resData.message || 'Unable to provision the user.');
+
+      setUsers((currentUsers) => [...currentUsers, resData.data]);
+      setNewUserData({ name: '', email: '', role: 'DRIVER', status: 'Active' });
+      setIsModalOpen(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center p-12 text-slate-500 gap-2">
+      <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
+      <span className="text-xs font-semibold tracking-wide uppercase">Syncing Fleet Directory...</span>
+    </div>
+  );
+
+  if (error) return (
+    <div className="m-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 text-xs font-medium">
+      <AlertTriangle className="h-5 w-5 shrink-0 text-red-500" />
+      <span>Telemetry Fault: {error} (Check backend server port status)</span>
+    </div>
+  );
+
   return (
-    <div className="h-full overflow-hidden bg-[#f8f9ff] text-[#0b1c30]">
-      <div className="flex h-full flex-col gap-6 p-6 xl:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-semibold">User Management</h1>
-            <p className="mt-2 max-w-2xl text-sm text-[#6b7280]">
-              Manage system access, role assignments, and authorization controls from a single admin console.
-            </p>
-          </div>
-          <div className="flex flex-col gap-4 rounded-[28px] border border-[#c5c6cf] bg-white px-5 py-4 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#0266ff]">
-                <span className="material-symbols-outlined">groups</span>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.24em] text-[#6b7280]">Total Operators</p>
-                <p className="text-2xl font-bold text-[#031635]">42</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 border-t border-[#e5eeff] pt-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                  <span className="material-symbols-outlined">verified_user</span>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-[#6b7280]">Admin Tiers</p>
-                  <p className="text-2xl font-bold text-[#031635]">3</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#eff4ff] flex items-center justify-center text-[#0266ff]">
-                  <span className="material-symbols-outlined">sensors</span>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.24em] text-[#6b7280]">Active Connections</p>
-                  <p className="text-2xl font-bold text-[#031635]">18</p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="p-8 space-y-6 relative">
+      {/* Title Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">User Directory</h1>
+          <p className="text-xs text-slate-500 mt-1">Manage system personnel privileges and clearance configurations.</p>
         </div>
-
-        <div className="flex-1 overflow-hidden rounded-[28px] border border-[#c5c6cf] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#e5eeff] bg-[#f8fafc] px-8 py-4">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] uppercase tracking-[0.24em] text-[#6b7280] font-semibold">Access Group:</span>
-                <select className="rounded-2xl border border-[#c5c6cf] bg-white px-4 py-2 text-sm font-semibold text-[#031635] outline-none focus:border-[#0266ff] focus:ring-2 focus:ring-[#cfe0ff]">
-                  <option>All Roles</option>
-                  <option>System Admin</option>
-                  <option>Fleet Manager</option>
-                  <option>Operator</option>
-                </select>
-              </div>
-            </div>
-            <button className="flex items-center gap-2 rounded-2xl bg-[#0266ff] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#0266ff]/20 hover:bg-[#0057e6] transition">
-              <span className="material-symbols-outlined">person_add</span>
-              Add New User
-            </button>
-          </div>
-
-          <div className="h-full overflow-y-auto">
-            <table className="min-w-full border-separate" style={{ borderSpacing: 0 }}>
-              <thead className="sticky top-0 z-10 bg-[#f8fafc]">
-                <tr className="text-left text-[10px] uppercase tracking-[0.28em] text-[#6b7280]">
-                  <th className="px-8 py-5">System Identity</th>
-                  <th className="px-8 py-5">Access Group Role</th>
-                  <th className="px-8 py-5">Connection State</th>
-                  <th className="px-8 py-5 text-right">Authorization Control</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5eeff]">
-                {users.map((user) => (
-                  <tr key={user.email} className="hover:bg-[#f8f9ff] transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-[#f1f5ff] flex items-center justify-center text-[#0266ff] font-bold">{user.initials}</div>
-                        <div>
-                          <p className="font-semibold text-[#031635]">{user.name}</p>
-                          <p className="text-xs text-[#6b7280]">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className="text-sm font-medium text-[#031635]">{user.role}</span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${user.badgeClass}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${user.stateDot}`} />
-                        {user.state}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <button className="mr-4 text-xs font-bold text-[#0266ff] hover:underline">Edit Policies</button>
-                      <button className="text-xs font-bold text-[#ba1a1a] hover:underline">Revoke Access</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex items-center justify-between border-t border-[#e5eeff] bg-[#f8fafc] px-8 py-3 text-sm text-[#6b7280]">
-            <p>Showing <span className="font-semibold text-[#031635]">1-2</span> of 42 users</p>
-            <div className="flex items-center gap-1">
-              <button className="rounded-full p-2 text-[#6b7280] hover:bg-[#eef4ff] transition">
-                <span className="material-symbols-outlined">chevron_left</span>
-              </button>
-              <button className="w-8 h-8 rounded-full bg-[#0266ff] text-white text-xs font-bold">1</button>
-              <button className="w-8 h-8 rounded-full text-[#031635] text-xs font-bold hover:bg-[#eef4ff] transition">2</button>
-              <button className="rounded-full p-2 text-[#6b7280] hover:bg-[#eef4ff] transition">
-                <span className="material-symbols-outlined">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-sky-400 hover:bg-sky-500 text-sky-950 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm transition-all"
+        >
+          <UserPlus className="h-4 w-4" /> Provision User
+        </button>
       </div>
+
+      {/* Interactive Search Field */}
+      <div className="w-80 relative">
+        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+          <Search className="h-3.5 w-3.5" />
+        </span>
+        <input 
+          type="text"
+          placeholder="Filter personnel by name, email, or role..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs focus:outline-none focus:border-sky-400 shadow-xs"
+        />
+      </div>
+
+      {/* Roster Data Table */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-50/70 border-b border-slate-200 text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+              <th className="p-4">Name</th>
+              <th className="p-4">Email</th>
+              <th className="p-4">Access Level</th>
+              <th className="p-4">Telemetry Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <tr key={user.id} className="hover:bg-slate-50/40 transition-colors">
+                  <td className="p-4 font-bold text-slate-900">{user.name}</td>
+                  <td className="p-4 text-slate-500">{user.email}</td>
+                  <td className="p-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold text-[11px] border border-slate-200">
+                      <Shield className="h-3 w-3 text-slate-400" /> {user.role}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      user.status === 'Active' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      {user.status === 'Active' && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+                      {user.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="p-8 text-center text-slate-400 italic">No personnel profiles match your query search criteria.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Creation Popup Modal Overlay */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl border border-slate-200 w-full max-w-md p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-black text-slate-900 text-sm tracking-tight">Provision New System Profile</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wide block">Full Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Alexander Pierce"
+                  value={newUserData.name}
+                  onChange={(e) => setNewUserData({...newUserData, name: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wide block">Corporate Email</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="e.g. a.pierce@fleetmanagement.com"
+                  value={newUserData.email}
+                  onChange={(e) => setNewUserData({...newUserData, email: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wide block">Clearance Level</label>
+                  <select 
+                    value={newUserData.role}
+                    onChange={(e) => setNewUserData({...newUserData, role: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                  >
+                    <option value="DRIVER">Driver</option>
+                    <option value="TECHNICIAN">Technician</option>
+                    <option value="FLEET_MANAGER">Fleet Manager</option>
+                    <option value="DISPATCHER">Dispatcher</option>
+                    <option value="SAFETY_INSPECTOR">Safety Inspector</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 tracking-wide block">Initial Status</label>
+                  <select 
+                    value={newUserData.status}
+                    onChange={(e) => setNewUserData({...newUserData, status: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs focus:outline-none focus:border-sky-400"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="In Workshop">In Workshop</option>
+                    <option value="On Route">On Route</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-slate-200 rounded-lg text-slate-600 font-semibold text-xs hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-sky-400 hover:bg-sky-500 text-sky-950 rounded-lg font-bold text-xs shadow-sm transition-all"
+                >
+                  {isSaving ? 'Saving...' : 'Save Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
