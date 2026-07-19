@@ -1,7 +1,51 @@
 import React, { useEffect, useState } from 'react';
 
+// --- Built-in SVG Icons ---
+const IconSearch = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const IconBell = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+);
+
+const IconTruck = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 011 1v0m0 0h2a1 1 0 001-1v-4a1 1 0 00-1-1h-2m-3-1V6" />
+  </svg>
+);
+
+const IconTrendingUp = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
+const IconWrench = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
+const IconAlertTriangle = () => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
+
+const IconArrowRight = () => (
+  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+  </svg>
+);
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('Dashboard');
   const [criticalCount, setCriticalCount] = useState(3);
 
   useEffect(() => {
@@ -15,16 +59,18 @@ export default function AdminDashboard() {
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#f8f9ff]">
       <header className="h-20 flex items-center justify-between px-10 shrink-0 bg-white/80 backdrop-blur-md border-b border-[#e5eeff]">
         <div className="relative w-96">
-          <span className="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-[#75777f] text-lg">search</span>
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 text-[#75777f]">
+            <IconSearch />
+          </span>
           <input
-            className="w-full bg-transparent border-none pl-8 pr-4 py-2 text-sm focus:ring-0 placeholder:text-[#75777f]/60"
+            className="w-full bg-transparent border-none pl-8 pr-4 py-2 text-sm focus:ring-0 placeholder:text-[#75777f]/60 outline-none"
             placeholder="Search systems or assets..."
             type="text"
           />
         </div>
         <div className="flex items-center gap-6">
           <button className="relative text-[#6b7280] hover:text-[#031635] transition-colors">
-            <span className="material-symbols-outlined text-2xl">notifications</span>
+            <IconBell />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[#ba1a1a] rounded-full border-2 border-white"></span>
           </button>
           <div className="h-6 w-px bg-[#c5c6cf]" />
@@ -58,11 +104,11 @@ export default function AdminDashboard() {
                 <h3 className="text-4xl font-semibold text-[#031635]">24</h3>
               </div>
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                <span className="material-symbols-outlined text-2xl">local_shipping</span>
+                <IconTruck />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-green-600 text-[13px] font-medium">
-              <span className="material-symbols-outlined text-sm">trending_up</span>
+              <IconTrendingUp />
               <span>+2 newly commissioned this week</span>
             </div>
           </div>
@@ -74,7 +120,7 @@ export default function AdminDashboard() {
                 <h3 className="text-4xl font-semibold text-[#031635]">8</h3>
               </div>
               <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
-                <span className="material-symbols-outlined text-2xl">engineering</span>
+                <IconWrench />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-[#6b7280] text-[13px]">
@@ -94,7 +140,7 @@ export default function AdminDashboard() {
                 <h3 className="text-4xl font-semibold text-[#ba1a1a]">{criticalCount}</h3>
               </div>
               <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600">
-                <span className="material-symbols-outlined text-2xl">report_problem</span>
+                <IconAlertTriangle />
               </div>
             </div>
             <div className="mt-4 flex items-center gap-2 text-red-600 text-[13px] font-bold">
@@ -131,9 +177,9 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-[#eff4ff]/50">
                   {[
-                    { id: '#TRK-8802', task: 'Heavy Brake System Replacement', priority: 'Critical', agent: 'M. Rivera', progress: 65, label: 'MR', color: 'red-600', badge: 'critical' },
-                    { id: '#TRK-4412', task: 'Synthetic Oil & Filter Service', priority: 'Medium', agent: 'P. Chen', progress: 30, label: 'PC', color: 'orange-600', badge: 'medium' },
-                    { id: '#TRK-1092', task: 'Tire Rotation & Alignment', priority: 'Routine', agent: 'J. Doe', progress: 90, label: 'JD', color: 'green-600', badge: 'routine' }
+                    { id: '#TRK-8802', task: 'Heavy Brake System Replacement', priority: 'Critical', agent: 'M. Rivera', progress: 65, label: 'MR', badge: 'critical' },
+                    { id: '#TRK-4412', task: 'Synthetic Oil & Filter Service', priority: 'Medium', agent: 'P. Chen', progress: 30, label: 'PC', badge: 'medium' },
+                    { id: '#TRK-1092', task: 'Tire Rotation & Alignment', priority: 'Routine', agent: 'J. Doe', progress: 90, label: 'JD', badge: 'routine' }
                   ].map((row) => (
                     <tr key={row.id} className="hover:bg-[#f8fbff] transition-colors group">
                       <td className="pl-8 pr-4 py-5 text-sm font-semibold text-[#0266ff]">{row.id}</td>
@@ -160,7 +206,7 @@ export default function AdminDashboard() {
                           <div className="w-20 h-1 bg-[#eff4ff] rounded-full overflow-hidden">
                             <div className={`h-full rounded-full ${
                               row.badge === 'critical'
-                                ? 'bg-secondary'
+                                ? 'bg-red-600'
                                 : row.badge === 'medium'
                                 ? 'bg-orange-500'
                                 : 'bg-green-500'
@@ -176,8 +222,9 @@ export default function AdminDashboard() {
             </div>
             <div className="px-8 py-4 bg-[#f8fbff] border-t border-[#e5eeff] flex items-center justify-between shrink-0">
               <p className="text-xs text-[#6b7280]">Showing active maintenance queue</p>
-              <button className="text-[#0266ff] font-bold text-xs hover:underline flex items-center gap-1">
-                Open Service Center <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              <button className="text-[#0266ff] font-bold text-xs hover:underline flex items-center gap-1.5">
+                <span>Open Service Center</span>
+                <IconArrowRight />
               </button>
             </div>
           </div>
