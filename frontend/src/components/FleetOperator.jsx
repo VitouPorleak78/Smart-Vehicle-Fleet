@@ -1,4 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -19,22 +21,12 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-const defaultDrivers = [
-  { id: '1', name: 'Marcus Chen', vehicle: 'FLT-8829', status: 'Active', phone: '+1 555-0922' },
-  { id: '2', name: 'Sarah Jenkins', vehicle: 'FLT-4130', status: 'Idle', phone: '+1 555-4567' },
-  { id: '3', name: 'Priya Singh', vehicle: 'FLT-2092', status: 'Maintenance', phone: '+1 555-7810' },
-];
-
-const defaultMaintenance = [
-  { id: 'm1', title: 'Brake Inspection', vehicle: 'FLT-5568', driver: 'Priya Singh', date: '2026-07-24', status: 'Upcoming', notes: 'Inspect front and rear brake lines.' },
-  { id: 'm2', title: 'Oil Change', vehicle: 'FLT-3341', driver: 'Marcus Chen', date: '2026-07-22', status: 'Scheduled', notes: 'Replace synthetic oil and confirm filter change.' },
-];
-
 export default function FleetOperator() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
-  const [drivers, setDrivers] = useState(defaultDrivers);
-  const [maintenanceItems, setMaintenanceItems] = useState(defaultMaintenance);
+  const [drivers, setDrivers] = useState([]);
+  const [maintenanceItems, setMaintenanceItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [maintenanceTitle, setMaintenanceTitle] = useState('');
@@ -61,6 +53,55 @@ export default function FleetOperator() {
   const [profilePhone, setProfilePhone] = useState('+1 (555) 092-4822');
   const [profileCompany, setProfileCompany] = useState('Global Logistics Inc.');
   const [profileDept, setProfileDept] = useState('Operations');
+
+  // Fetch drivers from database
+  const fetchDrivers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers`);
+      if (response.ok) {
+        const data = await response.json();
+        setDrivers(data.map((driver) => ({
+          id: driver.id,
+          name: driver.name,
+          vehicle: driver.vehicle,
+          status: driver.status,
+          phone: driver.phone,
+          email: driver.email,
+          dob: driver.dob,
+          license: driver.license,
+          licenseExpiry: driver.licenseExpiry,
+          emergencyName: driver.emergencyName,
+          emergencyPhone: driver.emergencyPhone,
+          photo: driver.photo,
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    }
+  };
+
+  // Fetch maintenance from database
+  const fetchMaintenance = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/maintenance`);
+      if (response.ok) {
+        const data = await response.json();
+        setMaintenanceItems(data);
+      }
+    } catch (error) {
+      console.error('Error fetching maintenance:', error);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchDrivers(), fetchMaintenance()]);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   const handleProfileImageUpload = (event) => {
     const file = event.target.files?.[0];
@@ -90,98 +131,6 @@ export default function FleetOperator() {
     };
     reader.readAsDataURL(file);
   };
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const rawDrivers = window.localStorage.getItem('drivers');
-      if (rawDrivers) {
-        const storedDrivers = JSON.parse(rawDrivers);
-        if (Array.isArray(storedDrivers) && storedDrivers.length > 0) {
-          setDrivers(storedDrivers.map((driver, index) => ({
-            id: driver.id || `driver-${index}`,
-            name: driver.name || `${driver.first || ''} ${driver.last || ''}`.trim() || 'Unknown Driver',
-            vehicle: driver.vehicle || 'Unassigned',
-            status: driver.status || 'Active',
-            phone: driver.phone || 'N/A',
-            photo: driver.photo || '',
-          })));
-        }
-      }
-    } catch (error) {
-      console.warn('Unable to load shared driver roster from localStorage.', error);
-    }
-
-    try {
-      const rawMaintenance = window.localStorage.getItem('fleetMaintenance');
-      if (rawMaintenance) {
-        const savedMaintenance = JSON.parse(rawMaintenance);
-        if (Array.isArray(savedMaintenance) && savedMaintenance.length > 0) {
-          setMaintenanceItems(savedMaintenance);
-        }
-      }
-    } catch (error) {
-      console.warn('Unable to load saved maintenance schedule from localStorage.', error);
-    }
-
-    try {
-      const rawProfile = window.localStorage.getItem('fleetProfile');
-      if (rawProfile) {
-        const savedProfile = JSON.parse(rawProfile);
-        setProfileName(savedProfile.name || profileName);
-        setProfileEmail(savedProfile.email || profileEmail);
-        setProfilePhone(savedProfile.phone || profilePhone);
-        setProfileCompany(savedProfile.company || profileCompany);
-        setProfileDept(savedProfile.department || profileDept);
-        setProfileImage(savedProfile.image || profileImage);
-      }
-    } catch (error) {
-      console.warn('Unable to load profile settings from localStorage.', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('drivers', JSON.stringify(drivers));
-    } catch (error) {
-      console.warn('Unable to persist driver roster to localStorage.', error);
-    }
-  }, [drivers]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('fleetProfile', JSON.stringify({
-        name: profileName,
-        email: profileEmail,
-        phone: profilePhone,
-        company: profileCompany,
-        department: profileDept,
-        image: profileImage,
-      }));
-    } catch (error) {
-      console.warn('Unable to persist profile settings to localStorage.', error);
-    }
-  }, [profileName, profileEmail, profilePhone, profileCompany, profileDept, profileImage]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem('fleetMaintenance', JSON.stringify(maintenanceItems));
-    } catch (error) {
-      console.warn('Unable to persist maintenance schedule.', error);
-    }
-  }, [maintenanceItems]);
-
-  useEffect(() => {
-    if (!maintenanceDate) return;
-    const parsedDate = new Date(maintenanceDate);
-    if (!Number.isNaN(parsedDate.getTime())) {
-      setSelectedDate(parsedDate);
-    }
-  }, [maintenanceDate]);
 
   const driversOnDuty = drivers.length;
   const vehiclesInService = Math.max(0, driversOnDuty - 1);
@@ -234,27 +183,136 @@ export default function FleetOperator() {
     setMaintenanceNotes('');
   };
 
-  const handleAddMaintenance = (event) => {
+  const handleAddMaintenance = async (event) => {
     event.preventDefault();
     if (!maintenanceTitle || !maintenanceVehicle || !maintenanceDriver || !maintenanceDate) {
       alert('Please fill in title, vehicle, driver, and date before adding maintenance.');
       return;
     }
 
-    const newTask = {
-      id: Date.now().toString(),
-      title: maintenanceTitle,
-      vehicle: maintenanceVehicle,
-      driver: maintenanceDriver,
-      date: maintenanceDate,
-      status: maintenanceStatus,
-      notes: maintenanceNotes,
-    };
+    try {
+      const driverId = drivers.find((d) => d.name === maintenanceDriver)?.id || null;
+      const response = await fetch(`${API_BASE_URL}/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: maintenanceTitle,
+          vehicle: maintenanceVehicle,
+          driverId,
+          date: maintenanceDate,
+          status: maintenanceStatus,
+          notes: maintenanceNotes,
+        }),
+      });
 
-    setMaintenanceItems((prev) => [newTask, ...prev]);
-    setSelectedDate(new Date(maintenanceDate));
-    clearMaintenanceForm();
+      if (response.ok) {
+        alert('Maintenance task added successfully!');
+        await fetchMaintenance();
+        setSelectedDate(new Date(maintenanceDate));
+        clearMaintenanceForm();
+      } else {
+        alert('Error adding maintenance task.');
+      }
+    } catch (error) {
+      console.error('Error adding maintenance:', error);
+      alert('Error adding maintenance task.');
+    }
   };
+
+  const handleDeleteDriver = async (driverId) => {
+    if (!window.confirm('Are you sure you want to delete this driver?')) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers/${driverId}`, { method: 'DELETE' });
+      if (response.ok) {
+        alert('Driver deleted successfully!');
+        await fetchDrivers();
+      } else {
+        alert('Error deleting driver.');
+      }
+    } catch (error) {
+      console.error('Error deleting driver:', error);
+      alert('Error deleting driver.');
+    }
+  };
+
+  const handleDeleteMaintenance = async (maintenanceId) => {
+    if (!window.confirm('Are you sure you want to delete this maintenance task?')) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/maintenance/${maintenanceId}`, { method: 'DELETE' });
+      if (response.ok) {
+        alert('Maintenance task deleted successfully!');
+        await fetchMaintenance();
+      } else {
+        alert('Error deleting maintenance task.');
+      }
+    } catch (error) {
+      console.error('Error deleting maintenance:', error);
+      alert('Error deleting maintenance task.');
+    }
+  };
+
+  const handleAddDriver = async (event) => {
+    event.preventDefault();
+    const first = newDriverFirst.trim();
+    const last = newDriverLast.trim();
+    if (!first || !last || !newDriverPhone || !newDriverVehicle) {
+      alert('Please enter first name, last name, phone, and vehicle.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/drivers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first,
+          last,
+          email: newDriverEmail,
+          phone: newDriverPhone,
+          dob: newDriverDob,
+          license: newDriverLicense,
+          licenseExpiry: newDriverLicenseExpiry,
+          vehicle: newDriverVehicle,
+          status: 'Active',
+          emergencyName: newDriverEmergencyName,
+          emergencyPhone: newDriverEmergencyPhone,
+          photo: newDriverPhoto,
+        }),
+      });
+
+      if (response.ok) {
+        alert('Driver added successfully!');
+        await fetchDrivers();
+        setNewDriverFirst('');
+        setNewDriverLast('');
+        setNewDriverEmail('');
+        setNewDriverPhone('');
+        setNewDriverDob('');
+        setNewDriverLicense('');
+        setNewDriverLicenseExpiry('');
+        setNewDriverVehicle('');
+        setNewDriverEmergencyName('');
+        setNewDriverEmergencyPhone('');
+        setNewDriverPhoto('');
+        setCurrentView('drivers');
+      } else {
+        alert('Error adding driver.');
+      }
+    } catch (error) {
+      console.error('Error adding driver:', error);
+      alert('Error adding driver.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontSize: '18px', color: '#64748b' }}>Loading fleet data...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', width: '100%' }}>
@@ -292,7 +350,6 @@ export default function FleetOperator() {
         .view-header h1, .view-header h2 { font-size: 28px; margin-bottom: 4px; color: #0f172a; }
         .view-header p { color: var(--text-muted); font-size: 14px; }
         .card { background: var(--card-bg); border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
-        .info-strip { background: #ffffff; border: 1px solid #dbeafe; color: #1e40af; padding: 16px 24px; border-radius: 6px; font-weight: 500; font-size: 14px; }
         .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
         .kpi-card .card-title { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
         .kpi-card .card-value { font-size: 32px; font-weight: 700; }
@@ -300,22 +357,21 @@ export default function FleetOperator() {
         .kpi-card.fuel .card-value { color: var(--green); }
         .kpi-card.alerts { border-left: 4px solid #ef4444; }
         .dashboard-split { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-        .timeline { display: grid; gap: 16px; }
-        .timeline-item { background: #f8fafc; padding: 16px; border-radius: 10px; border: 1px solid #e2e8f0; }
-        .timeline-title { font-weight: 700; color: #0f172a; }
         .compact-table { width: 100%; border-collapse: collapse; }
-        .compact-table th, .compact-table td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-        .compact-table th { background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; }
+        .compact-table th, .compact-table td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: left; }
+        .compact-table th { background: #f8fafc; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.02em; font-weight: 600; }
+        .compact-table tbody tr:hover { background-color: #f8fafc; }
         .btn { border: none; border-radius: 8px; padding: 12px 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .btn-primary { background-color: #2563eb; color: #fff; }
         .btn-primary:hover { background-color: #1d4ed8; }
         .btn-secondary { background-color: #f8fafc; color: #1e293b; }
         .btn-secondary:hover { background-color: #e2e8f0; }
+        .btn-danger { background-color: #ef4444; color: #fff; padding: 6px 12px; font-size: 12px; }
+        .btn-danger:hover { background-color: #dc2626; }
         .label-pill { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; }
         .label-success { background: #d1fae5; color: #065f46; }
         .label-warning { background: #fef3c7; color: #92400e; }
         .label-danger { background: #fee2e2; color: #991b1c; }
-        .view-all-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; background: #1e3a5f; color: white; border-radius: 8px; cursor: pointer; border: none; }
         .calendar-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
         .calendar-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
@@ -325,7 +381,6 @@ export default function FleetOperator() {
         .calendar-day.selected { border-color: #2563eb; background: #eff6ff; }
         .calendar-day .day-number { font-size: 14px; font-weight: 700; color: #0f172a; }
         .calendar-day .task-count { margin-top: 10px; font-size: 11px; color: #475569; }
-        .calendar-day.has-tasks { border-color: #60a5fa; }
         .maintenance-sidebar { display: flex; flex-direction: column; gap: 16px; }
         .maintenance-summary { background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; }
         .maintenance-list { display: grid; gap: 14px; margin-top: 16px; }
@@ -338,14 +393,14 @@ export default function FleetOperator() {
         .form-field label { font-size: 13px; font-weight: 600; color: #334155; }
         .form-field input, .form-field select, .form-field textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 13px 14px; font-size: 14px; color: #0f172a; background: #fff; }
         .form-field textarea { min-height: 120px; resize: vertical; }
-        .date-button { width: 100%; border: 1px solid #cbd5e1; border-radius: 12px; padding: 13px 16px; background: #fff; text-align: left; }
-        .calendar-nav button { border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; background: #fff; color: #334155; cursor: pointer; }
-        .calendar-nav button:hover { background: #f8fafc; }
         .form-card { background: var(--card-bg); border-radius: 8px; padding: 40px; border: 1px solid var(--border-color); width: 100%; }
         .form-actions { display: flex; gap: 16px; margin-top: 24px; }
+        .action-buttons { display: flex; gap: 8px; }
+        .calendar-nav button { border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px 14px; background: #fff; color: #334155; cursor: pointer; }
+        .calendar-nav button:hover { background: #f8fafc; }
         @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .dashboard-split { grid-template-columns: 1fr; } .calendar-layout { grid-template-columns: 1fr; } }
-        @media (max-width: 992px) { .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); } .sidebar.mobile-open { transform: translateX(0); } .main-wrapper { width: 100%; } .top-navbar { padding: 16px; } }
-        @media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } .top-navbar { flex-direction: column; align-items: flex-start; gap: 16px; } }
+        @media (max-width: 992px) { .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); } .sidebar.mobile-open { transform: translateX(0); } .main-wrapper { width: 100%; } }
+        @media (max-width: 768px) { .kpi-grid { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; } }
       `}</style>
 
       <aside className={`sidebar ${sidebarMobileOpen ? 'mobile-open' : ''}`}>
@@ -384,7 +439,7 @@ export default function FleetOperator() {
       <div className="main-wrapper">
         <nav className="top-navbar">
           <div className="nav-title">
-            <i className="fa-solid fa-bars menu-toggle" onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)}></i>
+            <i className="fa-solid fa-bars menu-toggle" onClick={() => setSidebarMobileOpen(!sidebarMobileOpen)} style={{ cursor: 'pointer' }}></i>
             <span id="nav-header-text" style={{ textTransform: 'capitalize' }}>{currentView.replace('-', ' ')}</span>
           </div>
           <div className="user-profile">
@@ -436,9 +491,9 @@ export default function FleetOperator() {
                     {drivers.slice(0, 3).map((driver) => (
                       <tr key={driver.id}>
                         <td>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-slate-500 text-sm font-bold">
-                              {driver.photo ? <img src={driver.photo} alt={driver.name} className="w-full h-full object-cover" /> : getInitials(driver.name)}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', overflow: 'hidden' }}>
+                              {driver.photo ? <img src={driver.photo} alt={driver.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : getInitials(driver.name)}
                             </div>
                             <span>{driver.name}</span>
                           </div>
@@ -449,58 +504,39 @@ export default function FleetOperator() {
                     ))}
                     {drivers.length === 0 && (
                       <tr>
-                        <td colSpan="3" className="text-slate-500 text-center py-8">No drivers found. Add drivers through the driver page first.</td>
+                        <td colSpan="3" style={{ color: '#64748b', textAlign: 'center', padding: '32px 16px' }}>No drivers found. Add drivers through the driver page first.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
-                <button className="btn btn-secondary" onClick={() => setCurrentView('drivers')}>View Full Roster</button>
+                <button className="btn btn-secondary" onClick={() => setCurrentView('drivers')} style={{ marginTop: '16px' }}>View Full Roster</button>
               </div>
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">Upcoming Services</h3>
-                    <p className="text-xs text-slate-500 mt-1">Planned maintenance and service windows for your highest-priority vehicles.</p>
-                  </div>
-                  <span className="text-xs text-blue-600 bg-blue-50 font-bold px-3 py-1 rounded-full">{upcomingServices.length} planned</span>
-                </div>
-                <div className="bg-slate-100 rounded-2xl border border-slate-200 p-5 space-y-4">
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+              <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '12px' }}>Upcoming Services</h3>
+                <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '16px' }}>Planned maintenance and service windows for your highest-priority vehicles.</p>
+                <div style={{ backgroundColor: '#f1f5f9', borderRadius: '18px', border: '1px solid #cbd5e1', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {upcomingServices.length > 0 ? upcomingServices.map((item) => (
-                    <div key={item.id} className="rounded-2xl bg-white p-4 border border-slate-200 shadow-sm">
-                      <p className="font-bold text-slate-900">{item.vehicle}</p>
-                      <p className="text-xs text-slate-500 mt-1">{item.title} • {new Date(item.date).toLocaleDateString()} • {item.notes || 'No time specified'}</p>
+                    <div key={item.id} style={{ backgroundColor: 'white', padding: '16px', borderRadius: '18px', border: '1px solid #cbd5e1' }}>
+                      <p style={{ fontWeight: 'bold', color: '#0f172a' }}>{item.vehicle}</p>
+                      <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>{item.title} • {new Date(item.date).toLocaleDateString()} • {item.notes || 'No time specified'}</p>
                     </div>
                   )) : (
-                    <div className="text-slate-500">No upcoming maintenance services are currently scheduled.</div>
+                    <div style={{ color: '#64748b' }}>No upcoming maintenance services are currently scheduled.</div>
                   )}
                 </div>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4">
-                <h3 className="font-bold text-slate-900 text-base">Recent System Activity</h3>
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
-                    <i className="fa-solid fa-circle-check text-emerald-500 mt-0.5"></i>
+              <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '12px' }}>Recent System Activity</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '12px' }}>
+                  <div style={{ padding: '12px', backgroundColor: '#f8fafc', borderRadius: '12px', display: 'flex', gap: '12px' }}>
+                    <i className="fa-solid fa-circle-check" style={{ color: '#10b981', marginTop: '4px' }}></i>
                     <div>
-                      <p className="font-bold text-slate-800">Route #9402 Completed</p>
-                      <p className="text-slate-400 text-[10px]">Driver: Marcus Chen • 12 mins ago</p>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
-                    <i className="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
-                    <div>
-                      <p className="font-bold text-slate-800">Low Tire Pressure Warning</p>
-                      <p className="text-slate-400 text-[10px]">Vehicle FLT-3341 • 45 mins ago</p>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-xl flex items-start gap-3">
-                    <i className="fa-solid fa-file-invoice text-blue-500 mt-0.5"></i>
-                    <div>
-                      <p className="font-bold text-slate-800">New Fuel Expense Submitted</p>
-                      <p className="text-slate-400 text-[10px]">Amount: $142.50 • 2 hrs ago</p>
+                      <p style={{ fontWeight: 'bold', color: '#1e293b' }}>Route #9402 Completed</p>
+                      <p style={{ fontSize: '10px', color: '#94a3b8' }}>Driver: Marcus Chen • 12 mins ago</p>
                     </div>
                   </div>
                 </div>
@@ -523,29 +559,33 @@ export default function FleetOperator() {
                     <th>Vehicle</th>
                     <th>Phone</th>
                     <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {drivers.map((driver) => {
                     return (
                       <tr key={driver.id}>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center text-slate-500 text-sm font-bold">
-                              {driver.photo ? <img src={driver.photo} alt={driver.name} className="w-full h-full object-cover" /> : getInitials(driver.name)}
+                        <td style={{ padding: '16px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', overflow: 'hidden' }}>
+                              {driver.photo ? <img src={driver.photo} alt={driver.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : getInitials(driver.name)}
                             </div>
                             <span>{driver.name}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-slate-500">{driver.vehicle}</td>
-                        <td className="py-4 px-4 text-slate-500">{driver.phone}</td>
-                        <td className="py-4 px-4"><span className={`label-pill ${driver.status === 'Active' ? 'label-success' : driver.status === 'Maintenance' ? 'label-warning' : 'label-danger'}`}>{driver.status}</span></td>
+                        <td style={{ padding: '16px 12px', color: '#64748b' }}>{driver.vehicle}</td>
+                        <td style={{ padding: '16px 12px', color: '#64748b' }}>{driver.phone}</td>
+                        <td style={{ padding: '16px 12px' }}><span className={`label-pill ${driver.status === 'Active' ? 'label-success' : driver.status === 'Maintenance' ? 'label-warning' : 'label-danger'}`}>{driver.status}</span></td>
+                        <td style={{ padding: '16px 12px' }}>
+                          <button className="btn btn-danger" onClick={() => handleDeleteDriver(driver.id)}>Delete</button>
+                        </td>
                       </tr>
                     );
                   })}
                   {drivers.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="text-slate-500 text-center py-8">No drivers found. Add drivers through the driver page first.</td>
+                      <td colSpan="5" style={{ color: '#64748b', textAlign: 'center', padding: '32px 16px' }}>No drivers found. Add drivers through the add driver page.</td>
                     </tr>
                   )}
                 </tbody>
@@ -562,96 +602,62 @@ export default function FleetOperator() {
             </section>
 
             <div className="card">
-              <div className="flex flex-col lg:flex-row gap-6">
-                <div className="w-full lg:w-80 bg-slate-100 p-6 rounded-2xl border border-slate-200">
-                  <div className="w-28 h-28 rounded-full bg-slate-200 flex items-center justify-center mb-5 text-slate-500 text-3xl">+</div>
-                  <p className="text-sm text-slate-500">Upload driver profile photo and capture basic identity details.</p>
+              <div style={{ display: 'flex', flexDirection: 'row', gap: '24px' }}>
+                <div style={{ width: '100%', maxWidth: '320px', backgroundColor: '#f1f5f9', padding: '24px', borderRadius: '18px', border: '1px solid #cbd5e1' }}>
+                  <div style={{ width: '112px', height: '112px', borderRadius: '50%', backgroundColor: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', color: '#64748b', fontSize: '24px' }}>+</div>
+                  <p style={{ fontSize: '14px', color: '#64748b' }}>Upload driver profile photo and capture basic identity details.</p>
                 </div>
 
-                <form className="flex-1 space-y-6" onSubmit={(event) => {
-                  event.preventDefault();
-                  const first = newDriverFirst.trim();
-                  const last = newDriverLast.trim();
-                  if (!first || !last || !newDriverPhone || !newDriverVehicle) {
-                    alert('Please enter first name, last name, phone, and vehicle.');
-                    return;
-                  }
-                  const newDriver = {
-                    id: Date.now().toString(),
-                    name: `${first} ${last}`,
-                    vehicle: newDriverVehicle,
-                    status: 'Active',
-                    phone: newDriverPhone,
-                    email: newDriverEmail,
-                    dob: newDriverDob,
-                    license: newDriverLicense,
-                    licenseExpiry: newDriverLicenseExpiry,
-                    emergencyName: newDriverEmergencyName,
-                    emergencyPhone: newDriverEmergencyPhone,
-                    photo: newDriverPhoto,
-                  };
-                  setDrivers((prev) => [newDriver, ...prev]);
-                  setNewDriverFirst('');
-                  setNewDriverLast('');
-                  setNewDriverEmail('');
-                  setNewDriverPhone('');
-                  setNewDriverDob('');
-                  setNewDriverLicense('');
-                  setNewDriverLicenseExpiry('');
-                  setNewDriverVehicle('');
-                  setNewDriverEmergencyName('');
-                  setNewDriverEmergencyPhone('');
-                  setNewDriverPhoto('');
-                }}>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">First Name</label>
-                      <input type="text" value={newDriverFirst} onChange={(e) => setNewDriverFirst(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                <form style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }} onSubmit={handleAddDriver}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                    <div className="form-field">
+                      <label>First Name</label>
+                      <input type="text" value={newDriverFirst} onChange={(e) => setNewDriverFirst(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Last Name</label>
-                      <input type="text" value={newDriverLast} onChange={(e) => setNewDriverLast(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Last Name</label>
+                      <input type="text" value={newDriverLast} onChange={(e) => setNewDriverLast(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Email Address</label>
-                      <input type="email" value={newDriverEmail} onChange={(e) => setNewDriverEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Email Address</label>
+                      <input type="email" value={newDriverEmail} onChange={(e) => setNewDriverEmail(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Phone Number</label>
-                      <input type="text" value={newDriverPhone} onChange={(e) => setNewDriverPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Phone Number</label>
+                      <input type="text" value={newDriverPhone} onChange={(e) => setNewDriverPhone(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Date of Birth</label>
-                      <input type="date" value={newDriverDob} onChange={(e) => setNewDriverDob(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Date of Birth</label>
+                      <input type="date" value={newDriverDob} onChange={(e) => setNewDriverDob(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Assigned Vehicle</label>
-                      <input type="text" value={newDriverVehicle} onChange={(e) => setNewDriverVehicle(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" placeholder="FLT-xxxx" />
+                    <div className="form-field">
+                      <label>Assigned Vehicle</label>
+                      <input type="text" value={newDriverVehicle} onChange={(e) => setNewDriverVehicle(e.target.value)} placeholder="FLT-xxxx" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Driver's License Number</label>
-                      <input type="text" value={newDriverLicense} onChange={(e) => setNewDriverLicense(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Driver's License Number</label>
+                      <input type="text" value={newDriverLicense} onChange={(e) => setNewDriverLicense(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">License Expiry Date</label>
-                      <input type="date" value={newDriverLicenseExpiry} onChange={(e) => setNewDriverLicenseExpiry(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>License Expiry Date</label>
+                      <input type="date" value={newDriverLicenseExpiry} onChange={(e) => setNewDriverLicenseExpiry(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Emergency Contact Name</label>
-                      <input type="text" value={newDriverEmergencyName} onChange={(e) => setNewDriverEmergencyName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Emergency Contact Name</label>
+                      <input type="text" value={newDriverEmergencyName} onChange={(e) => setNewDriverEmergencyName(e.target.value)} />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Emergency Phone Number</label>
-                      <input type="text" value={newDriverEmergencyPhone} onChange={(e) => setNewDriverEmergencyPhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg" />
+                    <div className="form-field">
+                      <label>Emergency Phone Number</label>
+                      <input type="text" value={newDriverEmergencyPhone} onChange={(e) => setNewDriverEmergencyPhone(e.target.value)} />
                     </div>
-                    <div className="lg:col-span-3">
-                      <label className="block text-xs font-semibold text-slate-500 mb-2">Driver Profile Photo</label>
-                      <input type="file" accept="image/*" onChange={handleDriverPhotoUpload} className="w-full text-sm" />
+                    <div style={{ gridColumn: 'span 3' }} className="form-field">
+                      <label>Driver Profile Photo</label>
+                      <input type="file" accept="image/*" onChange={handleDriverPhotoUpload} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg">Save Driver</button>
-                    <button type="button" onClick={() => {
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button type="submit" className="btn btn-primary">Save Driver</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => {
                       setNewDriverFirst('');
                       setNewDriverLast('');
                       setNewDriverEmail('');
@@ -663,7 +669,7 @@ export default function FleetOperator() {
                       setNewDriverEmergencyName('');
                       setNewDriverEmergencyPhone('');
                       setNewDriverPhoto('');
-                    }} className="bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg">Cancel</button>
+                    }}>Cancel</button>
                   </div>
                 </form>
               </div>
@@ -681,8 +687,8 @@ export default function FleetOperator() {
               <div className="card">
                 <div className="calendar-head">
                   <div>
-                    <p className="text-sm font-semibold text-slate-500">{calendarMonth.toLocaleString('default', { month: 'long' })} {calendarMonth.getFullYear()}</p>
-                    <h3 className="text-2xl font-bold text-slate-900">Calendar</h3>
+                    <p style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>{calendarMonth.toLocaleString('default', { month: 'long' })} {calendarMonth.getFullYear()}</p>
+                    <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a' }}>Calendar</h3>
                   </div>
                   <div className="calendar-nav">
                     <button type="button" onClick={goToPreviousMonth}>Prev</button>
@@ -722,25 +728,26 @@ export default function FleetOperator() {
               <aside className="maintenance-sidebar">
                 <div className="maintenance-summary card">
                   <h3>Selected Date</h3>
-                  <p className="text-slate-500">{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
-                  <p className="mt-4">{selectedDayItems.length > 0 ? `You have ${selectedDayItems.length} scheduled task${selectedDayItems.length === 1 ? '' : 's'}.` : 'No maintenance tasks are scheduled for this day.'}</p>
+                  <p style={{ color: '#64748b' }}>{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  <p style={{ marginTop: '16px' }}>{selectedDayItems.length > 0 ? `You have ${selectedDayItems.length} scheduled task${selectedDayItems.length === 1 ? '' : 's'}.` : 'No maintenance tasks are scheduled for this day.'}</p>
                 </div>
                 <div className="maintenance-summary card">
                   <h3>Tasks for the Day</h3>
                   <div className="maintenance-list">
                     {selectedDayItems.length === 0 ? (
-                      <div className="text-slate-500">Select a day to view maintenance tasks.</div>
+                      <div style={{ color: '#64748b' }}>Select a day to view maintenance tasks.</div>
                     ) : (
                       selectedDayItems.map((item) => {
                         return (
-                          <div key={item.id} className="maintenance-item">
+                          <div key={item.id} className="maintenance-item" style={{ position: 'relative' }}>
+                            <button className="btn btn-danger" onClick={() => handleDeleteMaintenance(item.id)} style={{ position: 'absolute', top: '8px', right: '8px' }}>×</button>
                             <div className="maintenance-item-title">{item.title}</div>
-                            <div className="text-sm text-slate-600">{item.vehicle} · {item.driver}</div>
+                            <div style={{ fontSize: '14px', color: '#475569' }}>{item.vehicle} · {item.driver}</div>
                             <div className="maintenance-tags">
                               <span className="tag-pill">{item.status}</span>
                               <span className="tag-pill">{item.date}</span>
                             </div>
-                            {item.notes && <p className="text-slate-500 text-sm mt-2">{item.notes}</p>}
+                            {item.notes && <p style={{ color: '#64748b', fontSize: '14px', marginTop: '8px' }}>{item.notes}</p>}
                           </div>
                         );
                       })
@@ -758,20 +765,20 @@ export default function FleetOperator() {
               <form className="form-card" onSubmit={handleAddMaintenance}>
                 <div className="form-grid">
                   <div className="form-field">
-                    <label htmlFor="maintenance-title">Task Title</label>
-                    <input id="maintenance-title" value={maintenanceTitle} onChange={(e) => setMaintenanceTitle(e.target.value)} placeholder="Brake inspection" />
+                    <label>Task Title</label>
+                    <input value={maintenanceTitle} onChange={(e) => setMaintenanceTitle(e.target.value)} placeholder="Brake inspection" />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="maintenance-date">Date</label>
-                    <input id="maintenance-date" type="date" value={maintenanceDate} onChange={(e) => setMaintenanceDate(e.target.value)} className="date-button" />
+                    <label>Date</label>
+                    <input type="date" value={maintenanceDate} onChange={(e) => setMaintenanceDate(e.target.value)} />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="maintenance-vehicle">Vehicle</label>
-                    <input id="maintenance-vehicle" value={maintenanceVehicle} onChange={(e) => setMaintenanceVehicle(e.target.value)} placeholder="FLT-8829" />
+                    <label>Vehicle</label>
+                    <input value={maintenanceVehicle} onChange={(e) => setMaintenanceVehicle(e.target.value)} placeholder="FLT-8829" />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="maintenance-driver">Assign Driver</label>
-                    <select id="maintenance-driver" value={maintenanceDriver} onChange={(e) => setMaintenanceDriver(e.target.value)}>
+                    <label>Assign Driver</label>
+                    <select value={maintenanceDriver} onChange={(e) => setMaintenanceDriver(e.target.value)}>
                       <option value="">Select Driver</option>
                       {drivers.map((driver) => {
                         return <option key={driver.id} value={driver.name}>{driver.name}</option>;
@@ -779,16 +786,16 @@ export default function FleetOperator() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label htmlFor="maintenance-status">Status</label>
-                    <select id="maintenance-status" value={maintenanceStatus} onChange={(e) => setMaintenanceStatus(e.target.value)}>
+                    <label>Status</label>
+                    <select value={maintenanceStatus} onChange={(e) => setMaintenanceStatus(e.target.value)}>
                       <option value="Scheduled">Scheduled</option>
                       <option value="Upcoming">Upcoming</option>
                       <option value="Overdue">Overdue</option>
                     </select>
                   </div>
                   <div className="form-field" style={{ gridColumn: 'span 2' }}>
-                    <label htmlFor="maintenance-notes">Notes</label>
-                    <textarea id="maintenance-notes" value={maintenanceNotes} onChange={(e) => setMaintenanceNotes(e.target.value)} placeholder="Describe the maintenance requirements or priority." />
+                    <label>Notes</label>
+                    <textarea value={maintenanceNotes} onChange={(e) => setMaintenanceNotes(e.target.value)} placeholder="Describe the maintenance requirements or priority." />
                   </div>
                 </div>
                 <div className="form-actions">
@@ -807,53 +814,51 @@ export default function FleetOperator() {
               <p>Update your operator profile and sync the top-right avatar.</p>
             </section>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-4">
-                <div className="relative">
-                  <img src={profileImage} alt={profileName} className="w-28 h-28 rounded-full object-cover border-2 border-white shadow-md" />
-                </div>
-                <h3 className="font-extrabold text-slate-900 text-xl">{profileName}</h3>
-                <span className="bg-blue-50 text-blue-600 font-semibold text-xs tracking-wider uppercase px-4 py-2 rounded-full">Fleet Director</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '16px' }}>
+                <img src={profileImage} alt={profileName} style={{ width: '112px', height: '112px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <h3 style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '20px' }}>{profileName}</h3>
+                <span style={{ backgroundColor: '#eff6ff', color: '#1e40af', fontWeight: 'bold', fontSize: '12px', letterSpacing: '0.05em', textTransform: 'uppercase', padding: '8px 16px', borderRadius: '9999px' }}>Fleet Director</span>
 
-                <div className="w-full mt-4 space-y-3 text-sm border-t border-slate-100 pt-6 text-left">
-                  <div className="flex justify-between items-center"><span className="text-slate-500 font-semibold">Email</span><span className="font-bold text-slate-800">{profileEmail}</span></div>
-                  <div className="flex justify-between items-center"><span className="text-slate-500 font-semibold">Phone</span><span className="font-bold text-slate-800">{profilePhone}</span></div>
-                  <div className="flex justify-between items-center"><span className="text-slate-500 font-semibold">Company</span><span className="font-bold text-slate-800">{profileCompany}</span></div>
-                  <div className="flex justify-between items-center"><span className="text-slate-500 font-semibold">Department</span><span className="font-bold text-slate-800">{profileDept}</span></div>
+                <div style={{ width: '100%', marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '24px', textAlign: 'left', fontSize: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ color: '#64748b', fontWeight: '600' }}>Email</span><span style={{ fontWeight: 'bold', color: '#1e293b' }}>{profileEmail}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ color: '#64748b', fontWeight: '600' }}>Phone</span><span style={{ fontWeight: 'bold', color: '#1e293b' }}>{profilePhone}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ color: '#64748b', fontWeight: '600' }}>Company</span><span style={{ fontWeight: 'bold', color: '#1e293b' }}>{profileCompany}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ color: '#64748b', fontWeight: '600' }}>Department</span><span style={{ fontWeight: 'bold', color: '#1e293b' }}>{profileDept}</span></div>
                 </div>
               </div>
 
-              <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                <h3 className="text-slate-900 font-bold text-xl mb-4">Edit Profile</h3>
-                <form className="space-y-5" onSubmit={handleSaveProfile}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <h3 style={{ color: '#0f172a', fontWeight: 'bold', fontSize: '20px', marginBottom: '16px' }}>Edit Profile</h3>
+                <form style={{ display: 'flex', flexDirection: 'column', gap: '20px' }} onSubmit={handleSaveProfile}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     <div className="form-field">
-                      <label className="text-sm font-semibold text-slate-600">Full Name</label>
-                      <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm" />
-                    </div>
-                    <div className="form-field">
-                      <label className="text-sm font-semibold text-slate-600">Email Address</label>
-                      <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm" />
+                      <label>Full Name</label>
+                      <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
                     </div>
                     <div className="form-field">
-                      <label className="text-sm font-semibold text-slate-600">Phone Number</label>
-                      <input type="text" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm" />
+                      <label>Email Address</label>
+                      <input type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} />
                     </div>
                     <div className="form-field">
-                      <label className="text-sm font-semibold text-slate-600">Company</label>
-                      <input type="text" value={profileCompany} onChange={(e) => setProfileCompany(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm" />
+                      <label>Phone Number</label>
+                      <input type="text" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} />
                     </div>
-                    <div className="form-field md:col-span-2">
-                      <label className="text-sm font-semibold text-slate-600">Department</label>
-                      <input type="text" value={profileDept} onChange={(e) => setProfileDept(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl text-sm" />
+                    <div className="form-field">
+                      <label>Company</label>
+                      <input type="text" value={profileCompany} onChange={(e) => setProfileCompany(e.target.value)} />
                     </div>
-                    <div className="form-field md:col-span-2">
-                      <label className="text-sm font-semibold text-slate-600">Profile Photo</label>
-                      <input type="file" accept="image/*" onChange={handleProfileImageUpload} className="w-full text-sm" />
+                    <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>Department</label>
+                      <input type="text" value={profileDept} onChange={(e) => setProfileDept(e.target.value)} />
+                    </div>
+                    <div className="form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>Profile Photo</label>
+                      <input type="file" accept="image/*" onChange={handleProfileImageUpload} />
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 mt-2">
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <button type="submit" className="btn btn-primary">Save Changes</button>
                     <button type="button" className="btn btn-secondary" onClick={() => window.location.reload()}>Reset</button>
                   </div>
