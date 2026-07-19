@@ -1,0 +1,25 @@
+:root {
+  --bg-sidebar: #0b172a;
+  --bg-main: #f3f6f9;
+  --blue-accent: #1d63ed;
+}
+
+body {
+  background-color: var(--bg-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.bg-sidebar { background-color: var(--bg-sidebar); }
+.bg-blue-accent { background-color: var(--blue-accent); }
+.text-blue-accent { color: var(--blue-accent); }
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.nav-btn.active {
+  background-color: var(--blue-accent);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(29, 99, 237, 0.2);
+}
