@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-export default function DriverHub() {
+export default function DriverHub({ currentDriverId = 1, onLogout }) {
     const [currentView, setCurrentView] = useState('dashboard');
     const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
+    // Form Fields State
     const [vehicleID, setVehicleID] = useState('1');
     const [propulsionType, setPropulsionType] = useState('PHEV');
     const [odometer, setOdometer] = useState('');
@@ -12,25 +13,59 @@ export default function DriverHub() {
     const [plateNumber, setPlateNumber] = useState('');
     const [notes, setNotes] = useState('');
     
+    // Log Accumulator State
     const [allLogs, setAllLogs] = useState([]);
     const [loadingLogs, setLoadingLogs] = useState(true);
     const [expandedLogId, setExpandedLogId] = useState(null);
 
+    // Conditional Fields Logic
     const showFuel = propulsionType === 'GAS' || propulsionType === 'PHEV';
     const showBattery = propulsionType === 'EV' || propulsionType === 'PHEV';
+
+    // Safe Logout Function
+    const handleLogoutAction = () => {
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        if (onLogout) {
+            onLogout();
+        } else {
+            window.location.reload();
+        }
+    };
+
+    // Telemetry Calculation Engine with Fallback & Local Date Parsing
+    const getLocalDateString = (dateInput) => {
+        if (!dateInput) return '';
+        const d = new Date(dateInput);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const todayStr = getLocalDateString(new Date());
+
     const todayLogs = allLogs.filter(log => {
-    const rawDate = log.logDate || log.log_date;
-    if (!rawDate) return false;
-    return new Date(rawDate).toLocaleDateString() === new Date().toLocaleDateString();
-});
+        const rawDate = log.logDate || log.log_date;
+        return getLocalDateString(rawDate) === todayStr;
+    });
 
-// Sum or pull max values dynamically
-const latestOdometer = todayLogs.reduce((sum, log) => {return sum + (parseFloat(log.odometer ?? log.mileage) || 0);}, 0);
-const totalFuelToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.fuelConsumption ?? log.fuel_consumption) || 0), 0);
-const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.EVConsumption ?? log.ev_consumption) || 0), 0);
+    // Fallback: If no logs submitted today, use latest available log entry for preview
+    const displayLogs = todayLogs.length > 0 ? todayLogs : (allLogs.length > 0 ? [allLogs[0]] : []);
 
+    const latestOdometer = displayLogs.reduce((sum, log) => sum + (parseFloat(log.odometer ?? log.mileage) || 0), 0);
+    const totalFuelToday = displayLogs.reduce((sum, log) => sum + (parseFloat(log.fuelConsumption ?? log.fuel_consumption) || 0), 0);
+    const totalBatteryToday = displayLogs.reduce((sum, log) => sum + (parseFloat(log.EVConsumption ?? log.ev_consumption) || 0), 0);
+
+    // Fetch Log History securely
     useEffect(() => {
-        fetch('http://localhost:5000/api/telemetry/driver/1')
+        const token = localStorage.getItem('token');
+        setLoadingLogs(true);
+
+        fetch(`http://localhost:5000/api/telemetry/driver/${currentDriverId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        })
             .then((res) => res.json())
             .then((data) => {
                 setAllLogs(Array.isArray(data) ? data : []);
@@ -40,19 +75,21 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                 console.error("Error reading recent logs:", err);
                 setLoadingLogs(false);
             });
-    }, [currentView]);
+    }, [currentView, currentDriverId]);
 
+    // Centralized Form Submissions Handler
     const handleFormSubmit = async (e) => {
         e.preventDefault();
 
+        // Khmer license plate pattern validator (e.g., 2CD-9876)
         const platePattern = /^2[A-Z]{2}-\d{4}$/;
         if(!platePattern.test(plateNumber)) {
-            alert('Invalid Plate Number Format Please re-enter.');
+            alert('Invalid Plate Number Format. Please re-enter (e.g., 2CD-9876).');
             return;
         }
 
         const telemetryPayload = {
-            driverId: 1, 
+            driverId: currentDriverId, 
             vehicleId: parseInt(vehicleID),
             propulsionType: propulsionType,
             odometer: parseFloat(odometer) || 0,
@@ -63,9 +100,14 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
         };
 
         try {
+            const token = localStorage.getItem('token');
+
             const response = await fetch('http://localhost:5000/api/telemetry/submit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
                 body: JSON.stringify(telemetryPayload)
             });
 
@@ -86,6 +128,7 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                 };
                 setAllLogs([savedEntry, ...allLogs]);
 
+                // Flush Fields
                 setOdometer('');
                 setFuelConsumption('');
                 setBatteryUsage('');
@@ -93,13 +136,13 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                 setNotes('');
                 setCurrentView('dashboard');
             } else {
-                alert(`Submission failed: ${data.error}\nReason: ${data.details || 'Check console details.'}`);
+                alert(`Submission failed: ${data.message || 'Unknown server error.'}`);
             }
 
         } catch (error) {
             console.warn('Backend server down. Switching automatically to frontend local memory sync mode.', error);
-
-            const memoryLogFallbackEntry = {
+            
+            const fallbackEntry = {
                 logDate: new Date(),
                 propulsionType: telemetryPayload.propulsionType,
                 plateNumber: telemetryPayload.plateNumber,
@@ -107,10 +150,10 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                 odometer: telemetryPayload.odometer,
                 fuelConsumption: telemetryPayload.fuelConsumption,
                 EVConsumption: telemetryPayload.evConsumption,
-                notes: telemetryPayload.notes || 'Saved Local Sync (Offline)'
+                notes: telemetryPayload.notes ? `${telemetryPayload.notes} (Offline Mode)` : 'Submitted (Offline Mode)'
             };
-
-            setAllLogs([memoryLogFallbackEntry, ...allLogs]);
+            
+            setAllLogs([fallbackEntry, ...allLogs]);
             alert('Offline Notice: Server not live. Entry saved locally to dashboard state memory array.');
 
             setOdometer('');
@@ -659,7 +702,7 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                     <li className={`sidebar-item ${currentView === 'settings' ? 'active' : ''}`} onClick={() => { setCurrentView('settings'); setSidebarMobileOpen(false); }}>
                         <button><i className="fa-solid fa-gear"></i> Settings</button>
                     </li>
-                    <li className="sidebar-item logout">
+                    <li className="sidebar-item logout" onClick={handleLogoutAction}>
                         <button><i className="fa-solid fa-right-from-bracket"></i> Logout</button>
                     </li>
                 </ul>
@@ -672,7 +715,7 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                         <span id="nav-header-text" style={{ textTransform: 'capitalize' }}>{currentView.replace('-', ' ')}</span>
                     </div>
                     <div className="user-profile">
-                        Welcome, Driver <div className="avatar">D</div>
+                        Welcome, Porleak Vitou <div className="avatar">PV</div>
                     </div>
                 </nav>
 
@@ -696,8 +739,6 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                                 <div className="card-title">Battery Used Today</div>
                                 <div className="card-value" style={{ color: '#3b82f6' }}>{totalBatteryToday.toFixed(1)}<span>kWh</span></div>
                             </div>
-                            
-                            {/* CLICKABLE OVERDUE MAINTENANCE ALERTS CARD */}
                             <div 
                                 className="card kpi-card alerts" 
                                 onClick={() => {
@@ -1002,7 +1043,6 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                     </div>
                 )}
 
-                {/* DETAILED MAINTENANCE HISTORY SECTION */}
                 {currentView === 'maintenance' && (
                     <div id="view-maintenance" className="app-view">
                         <section className="view-header">
@@ -1014,8 +1054,6 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                             <div className="card">
                                 <h3>Active Maintenance Logs</h3>
                                 <div className="service-records-list" style={{ marginTop: '16px' }}>
-                                    
-                                    {/* DETAILED CRITICAL OVERDUE TIMELINE ITEM */}
                                     <div className="timeline-item" style={{ borderLeft: '4px solid var(--red)', paddingLeft: '16px', marginBottom: '16px', background: '#fff5f5' }}>
                                         <div className="record-info">
                                             <h4 style={{ color: 'var(--red)', margin: 0 }}>⚠️ Engine Oil & Filter Replacement</h4>
@@ -1031,7 +1069,6 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                                         </div>
                                     </div>
 
-                                    {/* STANDARD SYSTEM DIAGNOSTIC COMPLETED ITEM */}
                                     <div className="timeline-item" style={{ borderLeft: '4px solid var(--green)', paddingLeft: '16px' }}>
                                         <div className="record-info">
                                             <h4>System Diagnostics Validation</h4>
@@ -1045,7 +1082,6 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                                             </div>
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -1068,12 +1104,18 @@ const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.E
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>Full Name</label>
-                                        <input type="text" className="form-control" defaultValue="Porleak Vitou" style={{ backgroundColor: '#f8fafc' }} />
+                                        <input type="text" className="form-control" defaultValue="Porleak Vitou" style={{ backgroundColor: '#ffffff' }} />
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                         <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>Email Address</label>
-                                        <input type="email" className="form-control" defaultValue="driver@fleet.com" />
+                                        <input 
+                                            type="email" 
+                                            className="form-control" 
+                                            value="driver@driver.com" 
+                                            disabled 
+                                            style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }} 
+                                        />
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

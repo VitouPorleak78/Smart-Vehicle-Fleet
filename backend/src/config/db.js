@@ -6,9 +6,11 @@ const pool = mysql.createPool({
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'SVFSMS',
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
+    // ssl: { rejectUnauthorized: false } <-- Double check that this remains deleted/commented out
 });
 
 pool.getConnection()
@@ -20,4 +22,4 @@ pool.getConnection()
         console.error('Error connecting to MYSQL database:', err.message);
     });
 
-    module.exports = pool;
+module.exports = pool;
