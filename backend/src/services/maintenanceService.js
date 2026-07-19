@@ -2,41 +2,53 @@
 
 /**
  * Evaluates vehicle telemetry data based on its specific powertrain strategy.
- * @param {Object} logData - Current log submitted by the driver (includes current_mileage, propulsionType, etc.)
+ * @param {Object} logData - Current log submitted by the driver (includes odometer, propulsionType, etc.)
  * @param {Object} vehicleBaseline - Baseline metrics pulled from the database
  */
 function evaluateMaintenanceTriggers(logData, vehicleBaseline) {
     const MILEAGE_INTERVAL = 5000; // Standard 5,000 km checkup
-    const mileageSinceLastService = logData.current_mileage - vehicleBaseline.last_service_mileage;
+    
+    // Aligned incoming telemetry inputs to handle naming properties cleanly
+    const currentOdometer = logData.odometer || 0;
+    const mileageSinceLastService = currentOdometer - (vehicleBaseline.last_service_mileage || 0);
+    const fuelUsed = logData.fuelConsumption || 0;
+    const electricUsed = logData.evConsumption || 0;
+    
+    // Normalize powertrain casing logic ("GAS" vs "ICE")
+    let activePowertrain = logData.propulsionType ? logData.propulsionType.toUpperCase() : '';
+    if (activePowertrain === 'GAS') activePowertrain = 'ICE';
 
     // Rule 1: Global Odometer Limit Check
-    if (mileageSinceLastService >= MILEAGE_INTERVAL) {
-        return {
-            triggerService: true,
-            reason: `Automated Alert: Vehicle exceeded standard service interval by ${mileageSinceLastService} km.`
-        };
-    }
+if (mileageSinceLastService >= MILEAGE_INTERVAL) {
+    return {
+        triggerService: true,
+        title: "Odometer Checkup",
+        status: "overdue",
+        reason: `Automated Alert: Vehicle exceeded standard service interval by ${mileageSinceLastService} km.`
+    };
+}
 
     // Rule 2: Powertrain Specific Rules Based on the Frontend Card Selection
-    switch (logData.propulsionType) {
+    switch (activePowertrain) {
         
-        case 'ICE': // Pure Fuel Vehicles (e.g., Ford Ranger)
-            // Example: Flag if fuel consumed per trip is exceptionally high
-            if (logData.fuelUsage > 60) { 
+        case 'ICE': // Pure Fuel Vehicles
+            if (fuelUsed > 60) { 
                 return { triggerService: true, reason: "ICE Alert: Fuel consumption spike detected. Inspect fuel filter." };
             }
             break;
 
         case 'EV': // Full Electric Vehicles
-            // Example: Flag if battery discharge rate is abnormally deep
-            if (logData.batteryDischarge > 90) {
+            if (electricUsed > 90) {
                 return { triggerService: true, reason: "EV Alert: Deep battery discharge cycle detected. Thermal inspection recommended." };
             }
             break;
 
-        case 'PHEV': // Plug-in Hybrids (e.g., Jetour T1)
+        case 'PHEV': // Plug-in Hybrids
             const CRITICAL_EFFICIENCY_DROP = 0.35;
-            if (logData.fuel_to_electric_ratio > (vehicleBaseline.baseline_ratio + CRITICAL_EFFICIENCY_DROP)) {
+            // Safe ratio assessment strategy avoiding division-by-zero checks
+            const dynamicRatio = electricUsed > 0 ? (fuelUsed / electricUsed) : 0;
+            
+            if (dynamicRatio > ((vehicleBaseline.baseline_ratio || 0.30) + CRITICAL_EFFICIENCY_DROP)) {
                 return { triggerService: true, reason: "PHEV Predictive Alert: High fuel utilization anomaly detected. Battery optimization recommended." };
             }
             break;
@@ -48,4 +60,6 @@ function evaluateMaintenanceTriggers(logData, vehicleBaseline) {
     return { triggerService: false, reason: "Vehicle operations stable. Inside safe powertrain limits." };
 }
 
-module.exports = { evaluateMaintenanceTriggers };
+module.exports = { 
+    evaluateMaintenanceTriggers 
+};

@@ -1,0 +1,13 @@
+[
+  {
+    "driverID": 1,
+    "vehicleID": 3,
+    "propulsionType": "PHEV",
+    "odometer": 1928,
+    "fuelConsumption": 10,
+    "batteryDischarge": 21,
+    "plateNumber": "2CO-3213",
+    "notes": "",
+    "timestamp": "2026-07-17T07:22:40.559Z"
+  }
+]

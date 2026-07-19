@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function DriverHub() {
-    // Exact view-switching router matching Reach's javascript layout variables
     const [currentView, setCurrentView] = useState('dashboard');
     const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
 
-    // Form inputs mapped to your Node/MySQL backend schema expectations
     const [vehicleID, setVehicleID] = useState('1');
     const [propulsionType, setPropulsionType] = useState('PHEV');
     const [odometer, setOdometer] = useState('');
@@ -14,34 +12,57 @@ export default function DriverHub() {
     const [plateNumber, setPlateNumber] = useState('');
     const [notes, setNotes] = useState('');
     
-    // Initialized dynamic log entry memory state array
-    const [allLogs, setAllLogs] = useState([
-        { date: '03/15/2024', kilometers: 120, fuel: 8.5, electric: 0, notes: 'Routine Check' },
-        { date: '03/14/2024', kilometers: 95,  fuel: 7.2, electric: 0, notes: 'Refueled' },
-        { date: '03/13/2024', kilometers: 110, fuel: 9.0, electric: 0, notes: 'Tire Inspection' }
-    ]);
+    const [allLogs, setAllLogs] = useState([]);
+    const [loadingLogs, setLoadingLogs] = useState(true);
+    const [expandedLogId, setExpandedLogId] = useState(null);
 
-    // Dynamic fuel/battery conditional rules
     const showFuel = propulsionType === 'GAS' || propulsionType === 'PHEV';
     const showBattery = propulsionType === 'EV' || propulsionType === 'PHEV';
+    const todayLogs = allLogs.filter(log => {
+    const rawDate = log.logDate || log.log_date;
+    if (!rawDate) return false;
+    return new Date(rawDate).toLocaleDateString() === new Date().toLocaleDateString();
+});
+
+// Sum or pull max values dynamically
+const latestOdometer = todayLogs.reduce((sum, log) => {return sum + (parseFloat(log.odometer ?? log.mileage) || 0);}, 0);
+const totalFuelToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.fuelConsumption ?? log.fuel_consumption) || 0), 0);
+const totalBatteryToday = todayLogs.reduce((sum, log) => sum + (parseFloat(log.EVConsumption ?? log.ev_consumption) || 0), 0);
+
+    useEffect(() => {
+        fetch('http://localhost:5000/api/telemetry/driver/1')
+            .then((res) => res.json())
+            .then((data) => {
+                setAllLogs(Array.isArray(data) ? data : []);
+                setLoadingLogs(false);
+            })
+            .catch((err) => {
+                console.error("Error reading recent logs:", err);
+                setLoadingLogs(false);
+            });
+    }, [currentView]);
 
     const handleFormSubmit = async (e) => {
         e.preventDefault();
 
-        // 1. Pack the standard telemetry data payload structure
+        const platePattern = /^2[A-Z]{2}-\d{4}$/;
+        if(!platePattern.test(plateNumber)) {
+            alert('Invalid Plate Number Format Please re-enter.');
+            return;
+        }
+
         const telemetryPayload = {
-            driverID: 1, // Hardcoded placeholder until auth integration
-            vehicleID: parseInt(vehicleID),
+            driverId: 1, 
+            vehicleId: parseInt(vehicleID),
             propulsionType: propulsionType,
-            odometer: parseFloat(odometer),
+            odometer: parseFloat(odometer) || 0,
             fuelConsumption: showFuel ? parseFloat(fuelConsumption) || 0 : 0,
-            batteryDischarge: showBattery ? parseFloat(batteryUsage) || 0 : 0,
+            evConsumption: showBattery ? parseFloat(batteryUsage) || 0 : 0,
             plateNumber: plateNumber,
             notes: notes
         };
 
         try {
-            // Try hitting the live Express server endpoint on Port 5000
             const response = await fetch('http://localhost:5000/api/telemetry/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -51,17 +72,20 @@ export default function DriverHub() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Telemetry log submitted successfully to the database!');
+                alert('🎉 Telemetry log submitted successfully to the database!');
                 
                 const savedEntry = {
-                    date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-                    kilometers: telemetryPayload.odometer || 0,
-                    fuel: telemetryPayload.fuelConsumption || 0,
+                    logDate: new Date(),
+                    propulsionType: telemetryPayload.propulsionType,
+                    plateNumber: telemetryPayload.plateNumber,
+                    vehicleID: telemetryPayload.vehicleId,
+                    odometer: telemetryPayload.odometer,
+                    fuelConsumption: telemetryPayload.fuelConsumption,
+                    EVConsumption: telemetryPayload.evConsumption,
                     notes: telemetryPayload.notes || 'Submitted Successfully'
                 };
                 setAllLogs([savedEntry, ...allLogs]);
 
-                // Clear input states cleanly
                 setOdometer('');
                 setFuelConsumption('');
                 setBatteryUsage('');
@@ -69,36 +93,31 @@ export default function DriverHub() {
                 setNotes('');
                 setCurrentView('dashboard');
             } else {
-                alert('Server Error: ' + data.message);
+                alert(`Submission failed: ${data.error}\nReason: ${data.details || 'Check console details.'}`);
             }
 
         } catch (error) {
-            /* ==========================================================
-               FALLBACK STAGE DETECTED
-               The backend port 5000 is down. Intercept error and write to state!
-               ========================================================== */
             console.warn('Backend server down. Switching automatically to frontend local memory sync mode.', error);
 
-            // Construct a row structure compatible with your Recent Logs table columns
             const memoryLogFallbackEntry = {
-                date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-                kilometers: telemetryPayload.odometer || 0,
-                fuel: telemetryPayload.fuelConsumption || 0,
+                logDate: new Date(),
+                propulsionType: telemetryPayload.propulsionType,
+                plateNumber: telemetryPayload.plateNumber,
+                vehicleID: telemetryPayload.vehicleId,
+                odometer: telemetryPayload.odometer,
+                fuelConsumption: telemetryPayload.fuelConsumption,
+                EVConsumption: telemetryPayload.evConsumption,
                 notes: telemetryPayload.notes || 'Saved Local Sync (Offline)'
             };
 
-            // Safely push into your temporary React database array state
             setAllLogs([memoryLogFallbackEntry, ...allLogs]);
             alert('Offline Notice: Server not live. Entry saved locally to dashboard state memory array.');
 
-            // Reset matching state text fields
             setOdometer('');
             setFuelConsumption('');
             setBatteryUsage('');
             setPlateNumber('');
             setNotes('');
-
-            // Push driver instantly back to dashboard panel view to verify table output update
             setCurrentView('dashboard');
         }
     };
@@ -106,11 +125,7 @@ export default function DriverHub() {
     return (
         <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', width: '100%' }}>
             
-            {/* REACH'S INLINE CSS ENGINE SCOPE */}
             <style>{`
-                /* ==========================================
-                   1. GLOBAL CORE TOKENS & TRANSITIONS 
-                   ========================================== */
                 :root {
                     --bg-main: #f0f4f8; 
                     --sidebar-blue: #0b3c7b; 
@@ -130,9 +145,6 @@ export default function DriverHub() {
                     to { opacity: 1; transform: translateY(0); } 
                 }
 
-                /* ==========================================
-                   2. STRUCTURAL SIDEBAR 
-                   ========================================== */
                 .sidebar { 
                     width: 260px; 
                     background-color: var(--sidebar-blue); 
@@ -184,9 +196,6 @@ export default function DriverHub() {
                     margin-top: auto; 
                 }
 
-                /* ==========================================
-                   3. TOP NAVBAR & LAYOUT PANELS
-                   ========================================== */
                 .main-wrapper { 
                     flex-grow: 1; 
                     display: flex; 
@@ -252,24 +261,12 @@ export default function DriverHub() {
                     font-size: 14px; 
                 }
 
-                /* ==========================================
-                   4. DASHBOARD SPLITS & KPI PANELS
-                   ========================================== */
                 .card { 
                     background: var(--card-bg); 
                     border-radius: 8px; 
                     padding: 20px; 
                     box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
                     border: 1px solid var(--border-color); 
-                }
-                .info-strip { 
-                    background: #ffffff; 
-                    border: 1px solid #dbeafe; 
-                    color: #1e40af; 
-                    padding: 16px 24px; 
-                    border-radius: 6px; 
-                    font-weight: 500; 
-                    font-size: 14px; 
                 }
                 .kpi-grid { 
                     display: grid; 
@@ -312,7 +309,6 @@ export default function DriverHub() {
                     gap: 24px; 
                 }
                 
-                /* Restructured Bottom Split Grid Engine to balance depth lengths */
                 .bottom-split { 
                     display: grid; 
                     grid-template-columns: 2fr 1fr; 
@@ -363,9 +359,6 @@ export default function DriverHub() {
                     font-size: 14px; 
                 }
 
-                /* ==========================================
-                   5. ACTION ELEMENTS & BADGES
-                   ========================================== */
                 .btn-primary, 
                 .btn-secondary, 
                 .btn-full-blue, 
@@ -416,9 +409,6 @@ export default function DriverHub() {
                 .tip-text h4 { font-size: 14px; margin-bottom: 4px; color: #1e3a5f; }
                 .tip-text p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
-                /* ==========================================
-                   6. FORMS & CONTROLS
-                   ========================================== */
                 .form-card { 
                     background: var(--card-bg); 
                     border-radius: 8px; 
@@ -503,50 +493,6 @@ export default function DriverHub() {
                     margin-top: 16px; 
                 }
 
-                /* ==========================================
-                   7. SPREADSHEETS & DATA TABLES
-                   ========================================== */
-                .filter-bar { 
-                    background: var(--card-bg); 
-                    border: 1px solid var(--border-color); 
-                    border-radius: 6px; 
-                    padding: 16px 24px; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: space-between; 
-                    flex-wrap: wrap; 
-                    gap: 16px; 
-                }
-                .filters-left { 
-                    display: flex; 
-                    align-items: center; 
-                    gap: 24px; 
-                    flex-wrap: wrap; 
-                }
-                .filter-item { 
-                    display: flex; 
-                    align-items: center; 
-                    gap: 12px; 
-                    font-size: 13px; 
-                    font-weight: 500; 
-                }
-                .filter-input { 
-                    padding: 8px 12px; 
-                    border: 1px solid #cbd5e1; 
-                    border-radius: 4px; 
-                    font-size: 13px; 
-                    color: var(--text-dark); 
-                    background: #fff; 
-                }
-                .btn-export { 
-                    background-color: #0b3c7b; 
-                    color: white; 
-                    font-size: 13px; 
-                    padding: 10px 20px; 
-                    border-radius: 6px; 
-                    border: none; 
-                    cursor: pointer; 
-                }
                 .my-logs-card { 
                     background: var(--card-bg); 
                     border: 1px solid var(--border-color); 
@@ -588,31 +534,10 @@ export default function DriverHub() {
                 .master-table tr:hover { 
                     background-color: #f8fafc; 
                 }
-                .table-action-btns { 
-                    display: flex; 
-                    gap: 8px; 
-                }
-                .btn-table-action { 
-                    padding: 6px 12px; 
-                    font-size: 12px; 
-                    font-weight: 500; 
-                    border-radius: 4px; 
-                    border: none; 
-                    cursor: pointer; 
-                }
-                .btn-table-action.edit { background-color: #e0f2fe; color: #0369a1; }
-                .btn-table-action.delete { background-color: #fee2e2; color: #b91c1c; }
-                .table-footer { padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; background-color: #f8fafc; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-muted); }
-                .pagination-controls { display: flex; align-items: center; gap: 4px; }
-                .page-num { min-width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: var(--text-dark); }
-                .page-num.active { background-color: #2563eb; color: white; border-color: #2563eb; }
-
-                /* ==========================================
-                   8. MAINTENANCE SERVICE HISTORY LOGS
-                   ========================================== */
+                
                 .history-split { 
                     display: grid; 
-                    grid-template-columns: 1.2fr 1fr; 
+                    grid-template-columns: 1fr; 
                     gap: 24px; 
                     align-items: start; 
                 }
@@ -664,42 +589,10 @@ export default function DriverHub() {
                     font-size: 12px; 
                     color: var(--text-muted); 
                     display: flex; 
-                    align-items: center; 
+                    align-items: center;  
                     gap: 6px; 
                 }
-                .btn-inline-view { 
-                    background: #f0f4f8; 
-                    border: none; 
-                    padding: 6px 12px; 
-                    border-radius: 4px; 
-                    font-size: 12px; 
-                    font-weight: 500; 
-                    color: #1e3a5f; 
-                    cursor: pointer; 
-                }
-                .matrix-table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    font-size: 13px; 
-                    margin-top: 16px; 
-                    text-align: left; 
-                }
-                .matrix-table th { 
-                    color: var(--text-muted); 
-                    padding: 12px 8px; 
-                    font-size: 11px; 
-                    text-transform: uppercase; 
-                    border-bottom: 2px solid var(--border-color); 
-                }
-                .matrix-table td { 
-                    padding: 14px 8px; 
-                    border-bottom: 1px solid #f1f5f9; 
-                    color: var(--text-dark); 
-                }
 
-                /* ==========================================
-                   9. CONFIGURATION PARAMETERS
-                   ========================================== */
                 .settings-grid { 
                     display: grid; 
                     grid-template-columns: 1fr; 
@@ -715,39 +608,7 @@ export default function DriverHub() {
                     padding-bottom: 8px; 
                     border-bottom: 1px solid var(--border-color); 
                 }
-                .settings-split-row { 
-                    display: grid; 
-                    grid-template-columns: 1fr 1fr; 
-                    gap: 24px; 
-                }
-                .checkbox-group { 
-                    display: flex; 
-                    flex-direction: column; 
-                    gap: 16px; 
-                    margin-bottom: 20px; 
-                }
-                .checkbox-item { 
-                    display: flex; 
-                    align-items: center; 
-                    gap: 10px; 
-                    font-size: 14px; 
-                    font-weight: 500; 
-                }
-                .checkbox-item input[type="checkbox"] { 
-                    width: 16px; 
-                    height: 16px; 
-                    cursor: pointer; 
-                }
-                .crypto-footer-text { 
-                    text-align: center; 
-                    font-size: 12px; 
-                    color: var(--text-muted); 
-                    margin-top: 16px; 
-                }
 
-                /* ==========================================
-                   10. RESPONSIVE BREAKPOINTS
-                   ========================================== */
                 @media (max-width: 1200px) {
                     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
                     .dashboard-split, 
@@ -763,8 +624,6 @@ export default function DriverHub() {
                     .main-wrapper { width: 100%; }
                     .menu-toggle { display: block; }
                     .app-view { padding: 24px 16px; }
-                    .filter-bar { flex-direction: column; align-items: stretch; }
-                    .filters-left { flex-direction: column; align-items: stretch; }
                 }
                 @media (max-width: 768px) {
                     .form-row, 
@@ -775,14 +634,10 @@ export default function DriverHub() {
                     .form-card { padding: 24px; }
                     .kpi-grid { grid-template-columns: 1fr; }
                     .top-navbar { padding: 16px; }
-                    .my-logs-card, 
-                    .matrix-card-wrapper { 
-                        overflow-x: auto; 
-                    }
+                    .my-logs-card { overflow-x: auto; }
                 }
             `}</style>
 
-            {/* SIDEBAR NAVIGATION CONTROLS */}
             <aside className={`sidebar ${sidebarMobileOpen ? 'mobile-open' : ''}`} id="sidebar">
                 <div className="sidebar-header">
                     <i className="fa-solid fa-truck-monster"></i>
@@ -810,7 +665,6 @@ export default function DriverHub() {
                 </ul>
             </aside>
 
-            {/* RIGHT WORKING STAGE CONTAINER */}
             <div className="main-wrapper">
                 <nav className="top-navbar">
                     <div className="nav-title">
@@ -822,7 +676,6 @@ export default function DriverHub() {
                     </div>
                 </nav>
 
-                {/* APP PAGE VIEW 1: DASHBOARD */}
                 {currentView === 'dashboard' && (
                     <div id="view-dashboard" className="app-view">
                         <section className="view-header">
@@ -833,19 +686,38 @@ export default function DriverHub() {
                         <section className="kpi-grid">
                             <div className="card kpi-card">
                                 <div className="card-title">Today's Mileage</div>
-                                <div className="card-value">12,500<span>km</span></div>
+                                <div className="card-value">{Number(latestOdometer).toLocaleString()}<span>km</span></div>
                             </div>
                             <div className="card kpi-card fuel">
                                 <div className="card-title">Fuel Used Today</div>
-                                <div className="card-value">5.5<span>L</span></div>
+                                <div className="card-value">{totalFuelToday.toFixed(1)}<span>L</span></div>
                             </div>
                             <div className="card kpi-card">
                                 <div className="card-title">Battery Used Today</div>
-                                <div className="card-value" style={{ color: '#3b82f6' }}>12.0<span>kWh</span></div>
+                                <div className="card-value" style={{ color: '#3b82f6' }}>{totalBatteryToday.toFixed(1)}<span>kWh</span></div>
                             </div>
-                            <div className="card kpi-card alerts">
+                            
+                            {/* CLICKABLE OVERDUE MAINTENANCE ALERTS CARD */}
+                            <div 
+                                className="card kpi-card alerts" 
+                                onClick={() => {
+                                    setCurrentView('maintenance');
+                                    alert("⚠️ CRITICAL MAINTENANCE ALERT:\n\nVehicle ID: #1 (Ford Territory)\nIssue: Oil Change & Filter Replacement\nStatus: OVERDUE by 3 Days\n\nPlease schedule service immediately.");
+                                }} 
+                                style={{ cursor: 'pointer', transition: 'transform 0.2s ease, box-shadow 0.2s ease' }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                                }}
+                            >
                                 <div className="card-title">Maintenance Alerts</div>
-                                <div className="card-value"><i className="fa-solid fa-circle-exclamation"></i> 1 Overdue</div>
+                                <div className="card-value">
+                                    <i className="fa-solid fa-circle-exclamation"></i> 1 Overdue
+                                </div>
                             </div>
                         </section>
 
@@ -861,34 +733,77 @@ export default function DriverHub() {
                                 <div className="mock-chart">[ Dynamic Telemetry Graph Canvas ]</div>
                             </div>
 
-                            <div className="card logs-card">
+                            <div className="card logs-card" style={{ overflowX: 'auto' }}>
                                 <h3>Recent Logs</h3>
-                                <table className="logs-table">
+                                <table className="logs-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Kilometers</th>
-                                            <th>Fuel (L)</th>
-                                            <th>Notes</th>
+                                            <th style={{ padding: '8px' }}>Date</th>
+                                            <th style={{ padding: '8px' }}>Plate Number</th>
+                                            <th style={{ padding: '8px' }}>km</th>
+                                            <th style={{ padding: '8px' }}>Fuel (L)</th>
+                                            <th style={{ padding: '8px' }}>EV (kWh)</th>
+                                            <th style={{ padding: '8px' }}>Notes</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {/* Dynamically parses array records inside the layout table engine */}
-                                        {allLogs.map((log, index) => (
-                                            <tr key={index}>
-                                                <td>{log.date}</td>
-                                                <td className="bold-data">{log.kilometers}<span className="unit">km</span></td>
-                                                <td className="bold-data">{log.fuel}<span className="unit">L</span></td>
-                                                <td>{log.notes}</td>
+                                        {loadingLogs ? (
+                                            <tr>
+                                                <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>Loading...</td>
                                             </tr>
-                                        ))}
+                                        ) : allLogs.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="6" style={{ textAlign: 'center', fontStyle: 'italic', color: 'var(--text-muted)', padding: '16px' }}>No recent logs found.</td>
+                                            </tr>
+                                        ) : (
+                                            allLogs.slice(0, 5).map((log, index) => {
+                                                const rawDate = log.logDate || log.log_date;
+                                                const displayDate = rawDate ? new Date(rawDate).toLocaleString() : 'N/A';
+                                                
+                                                return (
+                                                    <tr key={index}>
+                                                        <td style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>{displayDate}</td>
+                                                        <td style={{ padding: '12px 8px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                                                            {log.plateNumber || log.plate_number || 'N/A'}
+                                                        </td>
+                                                        <td className="bold-data" style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>
+                                                            {log.odometer ?? log.mileage ?? 0} km
+                                                        </td>
+                                                        <td className="bold-data" style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>
+                                                            {log.fuelConsumption ?? log.fuel_consumption ?? 0} L
+                                                        </td>
+                                                        <td className="bold-data" style={{ padding: '12px 8px', whiteSpace: 'nowrap' }}>
+                                                            {(log.propulsionType || log.propulsion_type) !== 'ICE' 
+                                                                ? `${log.EVConsumption ?? log.ev_consumption ?? '0.00'} kWh` 
+                                                                : '-'}
+                                                        </td>
+                                                        <td style={{ padding: '12px 8px' }}>
+                                                            <div
+                                                                title={log.notes}
+                                                                style={{
+                                                                    maxWidth: '150px',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                    cursor: 'pointer',
+                                                                    fontStyle: log.notes ? 'normal' : 'italic',
+                                                                    color: log.notes ? 'inherit' : 'var(--text-muted)'
+                                                                }}
+                                                                onClick={() => log.notes && alert(`Full Note:\n\n${log.notes}`)}
+                                                            >
+                                                                {log.notes || 'No notes'}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
                                     </tbody>
                                 </table>
                                 <button className="view-all-btn" onClick={() => setCurrentView('my-logs')}>View All Logs <i className="fa-solid fa-chevron-down"></i></button>
                             </div>
                         </section>
 
-                        {/* CORRECTED BOTTOM CARD PANELS CONTAINER ROW POSITION */}
                         <section className="bottom-split">
                             <div className="card">
                                 <h3>Upcoming Maintenance</h3>
@@ -914,7 +829,6 @@ export default function DriverHub() {
                     </div>
                 )}
 
-                {/* APP PAGE VIEW 2: ADD DAILY LOG FORM */}
                 {currentView === 'add-log' && (
                     <div id="view-add-log" className="app-view">
                         <section className="view-header">
@@ -926,7 +840,7 @@ export default function DriverHub() {
                                 <label htmlFor="plate_number">License Plate Number</label>
                                 <div className="input-wrapper has-icon">
                                     <i className="fa-solid fa-rectangle-ad"></i>
-                                    <input type="text" id="plate_number" className="form-control" placeholder="e.g. Phnom Penh 2AZ-8888" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} required />
+                                    <input type="text" id="plate_number" className="form-control" placeholder="e.g. 2CA-8687" value={plateNumber} onChange={(e) => setPlateNumber(e.target.value.toUpperCase())} required />
                                 </div>
                             </div>
 
@@ -992,7 +906,6 @@ export default function DriverHub() {
                     </div>
                 )}
 
-                {/* APP PAGE VIEW 3: MY LOGS GRID */}
                 {currentView === 'my-logs' && (
                     <div id="view-my-logs" className="app-view">
                         <section className="view-header">
@@ -1004,60 +917,202 @@ export default function DriverHub() {
                             <table className="master-table">
                                 <thead>
                                     <tr>
+                                        <th>Date</th>
+                                        <th>Vehicle ID</th>
                                         <th>Plate Number</th>
-                                        <th>Classification</th>
-                                        <th>Odometer Reading</th>
+                                        <th>km</th>
                                         <th>Fuel Level</th>
-                                        <th>Battery Charge</th>
+                                        <th>EV Consumption</th>
+                                        <th>Notes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td style={{ fontWeight: 600 }}>PP-2AZ-8888</td>
-                                        <td><span className="badge completed" style={{ backgroundColor: '#e0f2fe', color: '#0369a1' }}>PHEV</span></td>
-                                        <td>12,500 km</td>
-                                        <td>5.5 L</td>
-                                        <td>12.0 kWh</td>
-                                    </tr>
+                                    {allLogs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="7" style={{ textAlign: 'center', fontStyle: 'italic', color: 'var(--text-muted)', padding: '24px' }}>No records found in database.</td>
+                                        </tr>
+                                    ) : (
+                                        allLogs.map((log, idx) => {
+                                            const rawDate = log.logDate || log.log_date;
+                                            const displayDate = rawDate ? new Date(rawDate).toLocaleString() : 'N/A';
+                                            const isExpanded = expandedLogId === idx;
+
+                                            return (
+                                                <tr key={idx}>
+                                                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap'}}>{displayDate}</td>
+                                                    <td style={{ fontWeight: 500, whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+                                                        #{log.vehicleID || log.vehicleId || log.vehicle_id || 'N/A'}
+                                                    </td>
+                                                    <td style={{ fontWeight: 500, whiteSpace: 'nowrap'}}>
+                                                        {log.plateNumber || log.plate_number || 'N/A'}
+                                                    </td>
+                                                    <td style={{ whiteSpace: 'nowrap'}}>
+                                                        {log.odometer ?? log.mileage ?? 0} km
+                                                    </td>
+                                                    <td style={{ whiteSpace: 'nowrap'}}>
+                                                        {log.fuelConsumption ?? log.fuel_consumption ?? 0} L
+                                                    </td>
+                                                    <td style={{ whiteSpace: 'nowrap'}}>
+                                                        {(log.propulsionType || log.propulsion_type) !== 'ICE' 
+                                                            ? `${log.EVConsumption ?? log.ev_consumption ?? '0.00'} kWh` 
+                                                            : '-'}
+                                                    </td>
+                                                    <td>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            <div
+                                                                title={log.notes}
+                                                                style={{
+                                                                    maxWidth: '250px',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: isExpanded ? 'clip' : 'ellipsis',
+                                                                    whiteSpace: isExpanded ? 'normal' : 'nowrap',
+                                                                    wordBreak: 'break-word',
+                                                                    cursor: 'pointer',
+                                                                    fontStyle: log.notes ? 'normal' : 'italic',
+                                                                    color: log.notes ? 'inherit' : 'var(--text-muted)'
+                                                                }}
+                                                            >
+                                                                {log.notes || 'No notes'}
+                                                            </div>
+                                                            {log.notes && log.notes.length > 20 && (
+                                                                <span 
+                                                                    style={{ 
+                                                                        color: '#2563eb', 
+                                                                        cursor: 'pointer', 
+                                                                        fontSize: '11px', 
+                                                                        fontWeight: '600',
+                                                                        width: 'fit-content',
+                                                                        userSelect: 'none',
+                                                                        marginTop: '2px'
+                                                                    }}
+                                                                    onClick={() => setExpandedLogId(isExpanded ? null : idx)}
+                                                                >
+                                                                    {isExpanded ? 'See Less ▲' : 'See More ▼'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
 
-                {/* APP PAGE VIEW 4: MAINTENANCE HISTORY */}
+                {/* DETAILED MAINTENANCE HISTORY SECTION */}
                 {currentView === 'maintenance' && (
                     <div id="view-maintenance" className="app-view">
                         <section className="view-header">
-                            <h2>Service Records</h2>
+                            <h2>Service Records & Alerts</h2>
+                            <p>Review real-time mechanical notifications and pending fleet service schedules.</p>
                         </section>
 
                         <div className="history-split">
                             <div className="card">
-                                <div className="service-records-list">
-                                    <div className="timeline-item">
-                                        <span className="timeline-icon completed"><i className="fa-solid fa-check"></i></span>
+                                <h3>Active Maintenance Logs</h3>
+                                <div className="service-records-list" style={{ marginTop: '16px' }}>
+                                    
+                                    {/* DETAILED CRITICAL OVERDUE TIMELINE ITEM */}
+                                    <div className="timeline-item" style={{ borderLeft: '4px solid var(--red)', paddingLeft: '16px', marginBottom: '16px', background: '#fff5f5' }}>
                                         <div className="record-info">
-                                            <h4>System Diagnostics Validation</h4>
-                                            <div className="record-status">Status: <span className="badge completed">Completed</span></div>
+                                            <h4 style={{ color: 'var(--red)', margin: 0 }}>⚠️ Engine Oil & Filter Replacement</h4>
+                                            <p style={{ margin: '4px 0', fontSize: '13px' }}><strong>Vehicle:</strong> Ford Territory (Plate: 2CA-8687)</p>
+                                            <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                                                <strong>Description:</strong> Engine runtime has surpassed the standard baseline operating limit threshold. Requires immediate lubrication swap.
+                                            </p>
+                                            <div className="record-status" style={{ marginTop: '8px' }}>
+                                                <span className="badge overdue" style={{ background: '#fee2e2', color: '#991b1b', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                    CRITICAL OVERDUE (3 Days)
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* STANDARD SYSTEM DIAGNOSTIC COMPLETED ITEM */}
+                                    <div className="timeline-item" style={{ borderLeft: '4px solid var(--green)', paddingLeft: '16px' }}>
+                                        <div className="record-info">
+                                            <h4>System Diagnostics Validation</h4>
+                                            <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                                                All onboard ECU modules, propulsion safety sensors, and battery core metrics cleared checks.
+                                            </p>
+                                            <div className="record-status" style={{ marginTop: '8px' }}>
+                                                <span className="badge completed" style={{ background: '#d1fae5', color: '#065f46', padding: '4px 8px', borderRadius: '4px' }}>
+                                                    Completed
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* APP PAGE VIEW 5: SYSTEM SETTINGS PANEL */}
                 {currentView === 'settings' && (
                     <div id="view-settings" className="app-view">
                         <section className="view-header">
-                            <h2>Settings</h2>
+                            <h2>Driver Settings</h2>
+                            <p>Manage your driver profile configurations and regional interface preferences.</p>
                         </section>
-                        <div className="settings-grid">
-                            <div className="card">
-                                <div className="settings-box-title">Security & Protocol Information</div>
-                                <div className="crypto-footer-text" style={{ textAlign: 'left', marginTop: 0 }}>Driver parameters are fully synced with the local MySQL system pipeline.</div>
+
+                        <div className="settings-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', maxWidth: '800px' }}>
+                            <div className="card" style={{ padding: '24px' }}>
+                                <div className="settings-box-title" style={{ fontSize: '16px', fontWeight: '600', color: '#1e3a5f', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                    <i className="fa-solid fa-user-gear" style={{ marginRight: '8px' }}></i> Profile Information
+                                </div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>Full Name</label>
+                                        <input type="text" className="form-control" defaultValue="Porleak Vitou" style={{ backgroundColor: '#f8fafc' }} />
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>Email Address</label>
+                                        <input type="email" className="form-control" defaultValue="driver@fleet.com" />
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        <label style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>License Number</label>
+                                        <input type="text" className="form-control" value="DL-12345678" disabled style={{ backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="card" style={{ padding: '24px' }}>
+                                <div className="settings-box-title" style={{ fontSize: '16px', fontWeight: '600', color: '#1e3a5f', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                                    <i className="fa-solid fa-earth-asia" style={{ marginRight: '8px' }}></i> Regional & Telemetry Metrics
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Telemetry Measurement Units</div>
+                                            <div style={{ fontSize: '12px', color: '#64748b' }}>Choose between standard metric or imperial distance calculations.</div>
+                                        </div>
+                                        <select className="form-control" style={{ width: '150px' }} defaultValue="KM">
+                                            <option value="KM">Kilometers (km)</option>
+                                            <option value="MI">Miles (mi)</option>
+                                        </select>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                                        <div>
+                                            <div style={{ fontWeight: '600', fontSize: '14px', color: '#1e293b' }}>Local Offline Syncing</div>
+                                            <div style={{ fontSize: '12px', color: '#64748b' }}>Cache new log entries locally if backend pipeline breaks down.</div>
+                                        </div>
+                                        <input type="checkbox" defaultChecked style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button type="button" className="btn btn-secondary" onClick={() => setCurrentView('dashboard')}>Cancel</button>
+                                <button type="button" className="btn btn-primary" onClick={() => alert('🎉 Driver settings changes saved successfully!')}>Save Configurations</button>
                             </div>
                         </div>
                     </div>
