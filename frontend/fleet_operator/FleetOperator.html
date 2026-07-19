@@ -350,8 +350,12 @@
         <form id="add-driver-form" class="space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div class="col-span-1 flex items-start gap-4">
-              <div class="w-28 h-28 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
-                <i class="fa-solid fa-camera text-slate-400 text-2xl"></i>
+              <div class="w-28 h-28 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center border border-slate-200">
+                <label for="driver-photo-input" class="w-full h-full flex items-center justify-center cursor-pointer">
+                  <img id="driver-photo-preview" src="" alt="preview" class="w-full h-full object-cover hidden" />
+                  <i id="driver-photo-placeholder" class="fa-solid fa-camera text-slate-400 text-2xl"></i>
+                </label>
+                <input id="driver-photo-input" type="file" accept="image/*" class="hidden" />
               </div>
             </div>
             <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -413,6 +417,23 @@
             <button id="cancel-driver-btn" type="button" class="bg-slate-100 text-slate-700 font-semibold px-4 py-2 rounded-lg">Cancel</button>
           </div>
         </form>
+        
+        <div class="mt-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-slate-900 text-sm">Driver Roster</h3>
+            <p class="text-xs text-slate-400">List of drivers added in this session</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="text-slate-400 font-bold uppercase border-b border-slate-100 text-[11px]"><th class="py-2 px-3">Driver</th><th class="py-2 px-3">Phone</th><th class="py-2 px-3">Vehicle</th><th class="py-2 px-3">License</th><th class="py-2 px-3"></th></tr>
+              </thead>
+              <tbody id="driver-list-body" class="divide-y divide-slate-50 font-medium">
+                <tr><td class="py-4 px-4 text-slate-400" colspan="5">No drivers added yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -614,23 +635,7 @@
               <h3 class="font-bold text-slate-900 text-sm sm:text-base">Monthly Safety Score Trend</h3>
               <button class="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-lg">Last 6 Months</button>
             </div>
-            <div class="pt-4 pb-2">
-              <div class="relative h-44 w-full">
-                <svg class="w-full h-full overflow-visible" viewBox="0 0 500 150">
-                  <line x1="0" y1="30" x2="500" y2="30" stroke="#f1f5f9" stroke-width="1" />
-                  <line x1="0" y1="75" x2="500" y2="75" stroke="#f1f5f9" stroke-width="1" />
-                  <line x1="0" y1="120" x2="500" y2="120" stroke="#f1f5f9" stroke-width="1" />
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#1d63ed" stop-opacity="0.15" />
-                      <stop offset="100%" stop-color="#1d63ed" stop-opacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M 20 110 L 100 100 L 180 112 L 260 88 L 340 82 L 420 58 L 420 150 L 20 150 Z" fill="url(#chartGrad)" />
-                  <path d="M 20 110 L 100 100 L 180 112 L 260 88 L 340 82 L 420 58" fill="none" stroke="#1d63ed" stroke-width="3" stroke-linecap="round" />
-                </svg>
-              </div>
-            </div>
+            <!-- Monthly trend chart removed per request -->
           </div>
         </div>
 

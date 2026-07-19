@@ -460,18 +460,89 @@ window.switchTab = switchTab;
 const saveDriverBtn = document.getElementById('save-driver-btn');
 const cancelDriverBtn = document.getElementById('cancel-driver-btn');
 const addDriverForm = document.getElementById('add-driver-form');
+const driverPhotoInput = document.getElementById('driver-photo-input');
+const driverPhotoPreview = document.getElementById('driver-photo-preview');
+const driverPhotoPlaceholder = document.getElementById('driver-photo-placeholder');
+const driverListBody = document.getElementById('driver-list-body');
+
+let drivers = [];
+let currentDriverPhoto = null; // Data URL
+
+function loadDrivers() {
+  try {
+    const raw = localStorage.getItem('drivers');
+    drivers = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    drivers = [];
+  }
+}
+
+function saveDriversToStorage() {
+  try {
+    localStorage.setItem('drivers', JSON.stringify(drivers));
+  } catch (e) {
+    console.warn('Could not save drivers', e);
+  }
+}
+
+function renderDriverList() {
+  if (!driverListBody) return;
+  if (drivers.length === 0) {
+    driverListBody.innerHTML = `<tr><td class="py-4 px-4 text-slate-400" colspan="5">No drivers added yet.</td></tr>`;
+    return;
+  }
+  driverListBody.innerHTML = drivers.map((d) => `
+    <tr class="align-middle">
+      <td class="py-3 px-3 flex items-center gap-3">
+        <img src="${d.photo || ''}" class="w-10 h-10 rounded-full object-cover border" alt="" />
+        <div>
+          <div class="font-bold text-slate-900">${d.first} ${d.last}</div>
+          <div class="text-[11px] text-slate-400">${d.email || ''}</div>
+        </div>
+      </td>
+      <td class="py-3 px-3 text-slate-700">${d.phone || ''}</td>
+      <td class="py-3 px-3 text-slate-700">${d.vehicle || ''}</td>
+      <td class="py-3 px-3 text-slate-700">${d.license || ''}</td>
+      <td class="py-3 px-3 text-right"><button data-id="${d.id}" class="remove-driver-btn bg-rose-500 hover:bg-rose-600 text-white text-xs px-2.5 py-1 rounded">Remove</button></td>
+    </tr>
+  `).join('');
+}
 
 function clearAddDriverForm() {
   if (!addDriverForm) return;
   addDriverForm.querySelectorAll('input').forEach((i) => i.value = '');
   const sel = addDriverForm.querySelector('select');
   if (sel) sel.selectedIndex = 0;
+  if (driverPhotoInput) driverPhotoInput.value = '';
+  if (driverPhotoPreview) {
+    driverPhotoPreview.src = '';
+    driverPhotoPreview.classList.add('hidden');
+  }
+  if (driverPhotoPlaceholder) driverPhotoPlaceholder.classList.remove('hidden');
+  currentDriverPhoto = null;
+}
+
+if (driverPhotoInput) {
+  driverPhotoInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      currentDriverPhoto = ev.target.result;
+      if (driverPhotoPreview) {
+        driverPhotoPreview.src = currentDriverPhoto;
+        driverPhotoPreview.classList.remove('hidden');
+      }
+      if (driverPhotoPlaceholder) driverPhotoPlaceholder.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 if (cancelDriverBtn) {
   cancelDriverBtn.addEventListener('click', () => {
     clearAddDriverForm();
-    switchTab('dashboard');
+    // stay on add-driver view
   });
 }
 
@@ -479,13 +550,43 @@ if (saveDriverBtn) {
   saveDriverBtn.addEventListener('click', () => {
     const first = document.getElementById('driver-first')?.value.trim() || '';
     const last = document.getElementById('driver-last')?.value.trim() || '';
+    const email = document.getElementById('driver-email')?.value.trim() || '';
+    const phone = document.getElementById('driver-phone')?.value.trim() || '';
+    const vehicle = document.getElementById('driver-vehicle')?.value || '';
+    const license = document.getElementById('driver-license')?.value.trim() || '';
+
     if (!first || !last) {
       alert('Please enter the driver\'s first and last name.');
       return;
     }
-    // For now, just show a confirmation and clear the form
-    alert(`Driver ${first} ${last} saved.`);
+
+    if (!currentDriverPhoto) {
+      alert('Please choose a profile image for the driver.');
+      return;
+    }
+
+    const driver = {
+      id: Date.now().toString(),
+      first, last, email, phone, vehicle, license, photo: currentDriverPhoto,
+    };
+
+    drivers.unshift(driver);
+    saveDriversToStorage();
+    renderDriverList();
     clearAddDriverForm();
-    switchTab('dashboard');
   });
 }
+
+// Delegate remove button
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.remove-driver-btn');
+  if (!btn) return;
+  const id = btn.getAttribute('data-id');
+  drivers = drivers.filter((d) => d.id !== id);
+  saveDriversToStorage();
+  renderDriverList();
+});
+
+// initialize
+loadDrivers();
+renderDriverList();
